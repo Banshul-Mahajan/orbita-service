@@ -79,7 +79,7 @@ export default function DashboardPage() {
             <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No briefs yet. Generate your first one!</p>
           ) : (
             recentBriefs.map((b) => (
-              <Link key={b.id} to={`/briefs/${b.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
+              <Link key={b.id} to={`/dashboard/create/briefs/${b.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
                 <div>
                   <div style={{ fontSize: 14, color: '#e2e8f0', fontWeight: 500 }}>{b.topic}</div>
                   <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>{b.tone_style} · {b.h2s?.length || 0} sections</div>
@@ -99,7 +99,7 @@ export default function DashboardPage() {
             <p style={{ color: '#475569', fontSize: 13, textAlign: 'center', padding: '20px 0' }}>No articles yet. Start from a brief!</p>
           ) : (
             recentArticles.map((a) => (
-              <Link key={a.id} to={`/editor/${a.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
+              <Link key={a.id} to={`/dashboard/create/editor/${a.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #1e293b' }}>
                 <div>
                   <div style={{ fontSize: 14, color: '#e2e8f0', fontWeight: 500 }}>{a.title || 'Untitled Article'}</div>
                   <div style={{ fontSize: 11, color: '#475569', marginTop: 2 }}>
