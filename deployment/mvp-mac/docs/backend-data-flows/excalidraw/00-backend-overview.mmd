@@ -1,0 +1,63 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Left["Backend Design Board"]
+        direction TB
+        Goal["Goal<br>Document backend-only data flows"]
+        Routers["Routers<br>onboarding<br>keywords<br>serp<br>ai-scan<br>heatmap<br>questions<br>competitors<br>content"]
+        Shared["Shared Components<br>JWT auth<br>project context<br>auth service<br>async DB session"]
+        Stores["Discover Tables<br>WebsiteScanRun<br>WebsitePage<br>KeywordOpportunity<br>KeywordCluster<br>SerpResult<br>AiScanResult<br>Question<br>CompetitorDomain<br>CompetitorPage<br>ContentDraft"]
+        Ext["External Systems<br>Target websites<br>SerpAPI<br>OpenAI<br>Auth Service"]
+        Goal --> Routers --> Shared --> Stores --> Ext
+    end
+
+    subgraph Right["Runtime Flow"]
+        direction LR
+        Client["Client"]
+        API["FastAPI<br>/api/v1/*"]
+        Auth["Platform Context<br>get_current_user<br>get_project_context"]
+        Onboard["Onboarding"]
+        Keywords["Keyword Services"]
+        Serp["SERP"]
+        AIScan["AI Scan"]
+        Heatmap["Heatmap"]
+        Questions["Questions"]
+        Competitors["Competitors"]
+        Content["Content"]
+        DB["Postgres<br>discover schema"]
+        AS["Auth Service"]
+        SA["SerpAPI"]
+        OAI["OpenAI"]
+        Site["Target Sites"]
+
+        Client --> API
+        API --> Auth
+        Auth --> AS
+        API --> Onboard
+        API --> Keywords
+        API --> Serp
+        API --> AIScan
+        API --> Heatmap
+        API --> Questions
+        API --> Competitors
+        API --> Content
+        Onboard --> Site
+        Onboard --> Keywords
+        Keywords --> SA
+        Keywords --> OAI
+        Serp --> SA
+        Serp --> Site
+        AIScan --> OAI
+        Questions --> SA
+        Questions --> OAI
+        Competitors --> Serp
+        Content --> DB
+        API --> DB
+        Heatmap --> DB
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class Goal,Routers,Shared,Stores,Client,API,Auth,DB node;
+    class Onboard,Keywords,Serp,AIScan,Heatmap,Questions,Competitors,Content service;
+    class Ext,AS,SA,OAI,Site ext;

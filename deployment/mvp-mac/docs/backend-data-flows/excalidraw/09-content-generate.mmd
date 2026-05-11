@@ -1,0 +1,48 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["Content Generate"]
+        direction TB
+        API["API<br>POST /api/v1/content/generate"]
+        Fn["Functions<br>generate_content<br>generate_content_draft<br>_draft_dict"]
+        Work["What it does<br>load keyword opportunity<br>load competitor context<br>assemble company profile<br>generate deterministic draft<br>persist ContentDraft row"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>KeywordOpportunity<br>CompetitorDomain<br>CompetitorPage<br>generate_content_draft"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["generate_content"]
+        Context["project context"]
+        AuthSvc["Auth Service"]
+        KW["read KeywordOpportunity"]
+        Dom["read CompetitorDomain[]"]
+        Pages["read CompetitorPage[]"]
+        DB["Postgres discover schema"]
+        Draft["generate_content_draft"]
+        Helpers["title + outline + faq + slug"]
+        Write["write ContentDraft"]
+        Resp["_draft_dict output"]
+
+        Client --> Route
+        Route --> Context
+        Context --> AuthSvc
+        Route --> KW
+        Route --> Dom
+        Route --> Pages
+        KW --> DB
+        Dom --> DB
+        Pages --> DB
+        Route --> Draft
+        Draft --> Helpers
+        Route --> Write
+        Write --> DB
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,KW,Dom,Pages,DB,Write,Resp node;
+    class Context,Draft,Helpers service;
+    class AuthSvc ext;

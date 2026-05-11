@@ -1,0 +1,50 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["Onboarding Re-Scan"]
+        direction TB
+        API["API<br>POST /api/v1/onboarding/scan"]
+        Fn["Functions<br>rerun_website_scan<br>_persist_scan_and_keywords"]
+        Work["What it does<br>validate URL<br>load current brand/project state<br>delete old onboarding data<br>scan website again<br>rebuild keyword opportunities<br>update brand domain"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>project_scope_filters<br>extract_domain<br>scan_website<br>build_keyword_opportunities<br>update_brand_profile"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["rerun_website_scan"]
+        Context["project context"]
+        AuthSvc["Auth Service"]
+        Delete["delete old WebsiteScanRun / WebsitePage / KeywordOpportunity"]
+        DB["Postgres discover schema"]
+        Scan["scan_website"]
+        Site["Target Website"]
+        Opps["build_keyword_opportunities"]
+        SerpAPI["SerpAPI"]
+        OpenAI["OpenAI"]
+        Brand["update_brand_profile"]
+        Resp["scan + keyword_summary"]
+
+        Client --> Route
+        Route --> Context
+        Context --> AuthSvc
+        Route --> Delete
+        Delete --> DB
+        Route --> Scan
+        Scan --> Site
+        Route --> Opps
+        Opps --> SerpAPI
+        Opps --> OpenAI
+        Opps --> DB
+        Scan --> DB
+        Route --> Brand
+        Brand --> AuthSvc
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,Delete,DB,Resp node;
+    class Context,Scan,Opps,Brand service;
+    class AuthSvc,Site,SerpAPI,OpenAI ext;

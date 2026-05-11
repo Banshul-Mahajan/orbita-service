@@ -1,0 +1,52 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["Competitor Discovery"]
+        direction TB
+        API["API<br>POST /api/v1/competitors/discover"]
+        Fn["Functions<br>discover_project_competitors<br>discover_competitors<br>analyze_serp"]
+        Work["What it does<br>read selected keyword opportunities<br>derive own domain<br>run SERP per keyword<br>filter own domain results<br>aggregate competitor domains/pages<br>replace old competitor rows"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>KeywordOpportunity<br>discover_competitors<br>analyze_serp<br>extract_domain"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["discover_project_competitors"]
+        Context["project context"]
+        AuthSvc["Auth Service"]
+        KW["read selected KeywordOpportunity[]"]
+        DB["Postgres discover schema"]
+        Own["derive own domain"]
+        Discover["discover_competitors"]
+        Serp["analyze_serp per keyword"]
+        SerpAPI["SerpAPI"]
+        Delete["delete old CompetitorDomain / CompetitorPage"]
+        Dom["write CompetitorDomain[]"]
+        Pages["write CompetitorPage[]"]
+        Resp["domains + pages"]
+
+        Client --> Route
+        Route --> Context
+        Context --> AuthSvc
+        Route --> KW
+        KW --> DB
+        Route --> Own
+        Route --> Discover
+        Discover --> Serp
+        Serp --> SerpAPI
+        Route --> Delete
+        Delete --> DB
+        Route --> Dom
+        Dom --> DB
+        Route --> Pages
+        Pages --> DB
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,KW,DB,Delete,Dom,Pages,Resp node;
+    class Context,Own,Discover,Serp service;
+    class AuthSvc,SerpAPI ext;

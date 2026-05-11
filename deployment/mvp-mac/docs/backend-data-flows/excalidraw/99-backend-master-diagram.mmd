@@ -1,0 +1,140 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Design["Backend Data Flow Design"]
+        direction TB
+        Goal["Primary Goal<br>Document all backend flows<br>from routers to services to storage"]
+        Scope["Scope<br>backend only<br>FastAPI + services + DB + external dependencies"]
+        Functional["Main backend flows<br>onboarding<br>keyword expansion<br>SERP analysis<br>AI scan<br>heatmap<br>question mining<br>competitor discovery<br>content generation"]
+        APIList["Route inventory<br>POST /onboarding/start<br>POST /onboarding/scan<br>GET /onboarding/{project_id}<br>POST /keywords/expand<br>GET /keywords/{project_id}<br>GET /keywords/opportunities/{project_id}<br>POST /keywords/select<br>POST /serp/analyze<br>GET /serp/{project_id}<br>GET /serp/{project_id}/count<br>POST /ai-scan<br>GET /ai-scan/{project_id}<br>GET /ai-scan/{project_id}/count<br>GET /heatmap/{project_id}<br>POST /questions/mine<br>GET /questions/{project_id}<br>GET /questions/{project_id}/count<br>POST /competitors/discover<br>GET /competitors/{project_id}<br>POST /content/generate<br>GET /content/{project_id}<br>GET /content/draft/{draft_id}"]
+        Goal --> Scope --> Functional --> APIList
+    end
+
+    Client["Client / Frontend"]
+    Gateway["FastAPI API Layer<br>/api/v1/*<br>main.py mounts routers"]
+    Auth["Platform Context<br>get_current_user<br>get_project_context<br>project_scope_filters"]
+    AuthService["Auth Service<br>projects + brands"]
+    DB["Postgres<br>discover schema"]
+
+    subgraph Routers["Router Layer"]
+        direction TB
+        OnboardR["Onboarding Router<br>start_onboarding<br>rerun_website_scan<br>get_onboarding"]
+        KeywordR["Keywords Router<br>keyword_expand<br>get_keywords<br>get_keyword_opportunities<br>select_keyword_opportunities"]
+        SerpR["SERP Router<br>serp_analyze<br>get_serp_results<br>get_serp_count"]
+        AiR["AI Scan Router<br>run_ai_scan<br>get_ai_scan<br>get_ai_scan_count"]
+        HeatR["Heatmap Router<br>get_heatmap"]
+        QuesR["Questions Router<br>mine<br>get_questions<br>get_questions_count"]
+        CompR["Competitors Router<br>discover_project_competitors<br>get_project_competitors"]
+        ContentR["Content Router<br>generate_content<br>list_content<br>get_content_draft"]
+    end
+
+    subgraph Services["Service Layer"]
+        direction TB
+        ScanS["Website Scan Service<br>scan_website<br>extract_domain<br>derive_seed_topics"]
+        OppS["Keyword Opportunity Service<br>build_keyword_opportunities"]
+        KeyS["Keyword Service<br>expand_keywords<br>fetch_related_keywords<br>embed_keywords<br>cluster_keywords"]
+        SerpS["SERP Service<br>analyze_serp<br>scrape_url"]
+        AiS["AI Scan Service<br>scan_ai_engines<br>query_openai<br>extract_urls"]
+        HeatS["Heatmap Service<br>build_heatmap<br>compute_coverage_score"]
+        QuesS["Question Service<br>mine_questions<br>fetch_paa_questions<br>generate_ai_questions"]
+        CompS["Competitor Service<br>discover_competitors"]
+        ContentS["Content Draft Service<br>generate_content_draft"]
+    end
+
+    subgraph Tables["Main Tables"]
+        direction TB
+        T1["WebsiteScanRun"]
+        T2["WebsitePage"]
+        T3["KeywordOpportunity"]
+        T4["KeywordCluster"]
+        T5["SerpResult"]
+        T6["AiScanResult"]
+        T7["Question"]
+        T8["CompetitorDomain"]
+        T9["CompetitorPage"]
+        T10["ContentDraft"]
+    end
+
+    subgraph External["External Systems"]
+        direction TB
+        Site["Target Websites"]
+        SerpAPI["SerpAPI"]
+        OpenAI["OpenAI"]
+    end
+
+    Client --> Gateway
+    Gateway --> Auth
+    Auth --> AuthService
+
+    Gateway --> OnboardR
+    Gateway --> KeywordR
+    Gateway --> SerpR
+    Gateway --> AiR
+    Gateway --> HeatR
+    Gateway --> QuesR
+    Gateway --> CompR
+    Gateway --> ContentR
+
+    OnboardR --> ScanS
+    OnboardR --> OppS
+    OnboardR --> T1
+    OnboardR --> T2
+    OnboardR --> T3
+    OnboardR --> AuthService
+
+    KeywordR --> KeyS
+    KeywordR --> T3
+    KeywordR --> T4
+
+    SerpR --> SerpS
+    SerpR --> T5
+
+    AiR --> AiS
+    AiR --> T6
+
+    HeatR --> HeatS
+    HeatR --> T5
+    HeatR --> T6
+
+    QuesR --> QuesS
+    QuesR --> T7
+
+    CompR --> CompS
+    CompR --> T3
+    CompR --> T8
+    CompR --> T9
+
+    ContentR --> ContentS
+    ContentR --> T3
+    ContentR --> T8
+    ContentR --> T9
+    ContentR --> T10
+
+    OppS --> KeyS
+    CompS --> SerpS
+
+    ScanS --> Site
+    KeyS --> SerpAPI
+    KeyS --> OpenAI
+    SerpS --> SerpAPI
+    SerpS --> Site
+    AiS --> OpenAI
+    QuesS --> SerpAPI
+    QuesS --> OpenAI
+
+    T1 --> DB
+    T2 --> DB
+    T3 --> DB
+    T4 --> DB
+    T5 --> DB
+    T6 --> DB
+    T7 --> DB
+    T8 --> DB
+    T9 --> DB
+    T10 --> DB
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class Goal,Scope,Functional,APIList,Client,Gateway,Auth,DB,OnboardR,KeywordR,SerpR,AiR,HeatR,QuesR,CompR,ContentR,T1,T2,T3,T4,T5,T6,T7,T8,T9,T10 node;
+    class ScanS,OppS,KeyS,SerpS,AiS,HeatS,QuesS,CompS,ContentS service;
+    class AuthService,Site,SerpAPI,OpenAI ext;

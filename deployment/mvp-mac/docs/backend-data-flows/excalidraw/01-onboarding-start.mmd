@@ -1,0 +1,55 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["Onboarding Start"]
+        direction TB
+        API["API<br>POST /api/v1/onboarding/start"]
+        Fn["Functions<br>start_onboarding<br>_persist_scan_and_keywords<br>_keyword_summary"]
+        Work["What it does<br>validate URL<br>load project/brand context<br>scan website<br>derive seed topics<br>build keyword opportunities<br>persist scan/pages/opportunities<br>update brand and project profile"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>extract_domain<br>scan_website<br>build_keyword_opportunities<br>update_brand_profile<br>update_project_profile"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["start_onboarding"]
+        Auth["JWT + project context"]
+        Scan["scan_website"]
+        Site["Target Website"]
+        Topics["seed topics"]
+        Opps["build_keyword_opportunities"]
+        SerpAPI["SerpAPI"]
+        OpenAI["OpenAI embeddings"]
+        DB1["WebsiteScanRun"]
+        DB2["WebsitePage[]"]
+        DB3["KeywordOpportunity[]"]
+        Brand["update_brand_profile"]
+        Project["update_project_profile"]
+        AuthSvc["Auth Service"]
+        Resp["profile + scan + keyword_summary"]
+
+        Client --> Route
+        Route --> Auth
+        Auth --> AuthSvc
+        Route --> Scan
+        Scan --> Site
+        Scan --> Topics
+        Route --> DB1
+        Route --> DB2
+        Route --> Opps
+        Opps --> SerpAPI
+        Opps --> OpenAI
+        Opps --> DB3
+        Route --> Brand
+        Route --> Project
+        Brand --> AuthSvc
+        Project --> AuthSvc
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,DB1,DB2,DB3,Resp node;
+    class Auth,Scan,Topics,Opps,Brand,Project service;
+    class Site,SerpAPI,OpenAI,AuthSvc ext;

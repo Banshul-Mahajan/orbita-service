@@ -1,0 +1,46 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["AI Scan"]
+        direction TB
+        API["API<br>POST /api/v1/ai-scan"]
+        Fn["Functions<br>run_ai_scan<br>scan_ai_engines<br>query_openai"]
+        Work["What it does<br>load project context<br>fan out to requested engines<br>extract cited URLs and domains<br>delete old query rows<br>persist AiScanResult rows"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>scan_ai_engines<br>query_openai<br>extract_urls<br>urls_to_domains"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["run_ai_scan"]
+        Context["project context"]
+        AuthSvc["Auth Service"]
+        Engines["scan_ai_engines"]
+        OpenAI["OpenAI chat"]
+        Parse["extract_urls + urls_to_domains"]
+        Placeholder["gemini/perplexity placeholders"]
+        Delete["delete old AiScanResult rows"]
+        DB["AiScanResult table"]
+        Write["write engine result rows"]
+        Resp["query + engine responses"]
+
+        Client --> Route
+        Route --> Context
+        Context --> AuthSvc
+        Route --> Engines
+        Engines --> OpenAI
+        Engines --> Parse
+        Engines --> Placeholder
+        Route --> Delete
+        Delete --> DB
+        Route --> Write
+        Write --> DB
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,Delete,DB,Write,Resp node;
+    class Context,Engines,Parse,Placeholder service;
+    class AuthSvc,OpenAI ext;

@@ -1,0 +1,46 @@
+%%{init: {'theme':'dark','look':'handDrawn','themeVariables':{'background':'#0b0b0b','primaryColor':'#111111','primaryTextColor':'#f3f3f3','primaryBorderColor':'#d8d8d8','lineColor':'#d8d8d8','secondaryColor':'#143534','tertiaryColor':'#141b1b'}}}%%
+flowchart LR
+    subgraph Notes["SERP Analyze"]
+        direction TB
+        API["API<br>POST /api/v1/serp/analyze"]
+        Fn["Functions<br>serp_analyze<br>analyze_serp<br>scrape_url"]
+        Work["What it does<br>search Google via SerpAPI<br>scrape ranking URLs<br>extract headings/entities/readability<br>delete old query rows<br>persist SerpResult rows"]
+        Deps["Dependencies<br>get_current_user<br>get_project_context<br>analyze_serp<br>extract_domain<br>rough_readability<br>extract_entities_simple"]
+        API --> Fn --> Work --> Deps
+    end
+
+    subgraph Flow["Data Flow"]
+        direction LR
+        Client["Client"]
+        Route["serp_analyze"]
+        Context["project context"]
+        AuthSvc["Auth Service"]
+        API2["SerpAPI Google search"]
+        Scrape["scrape ranking URLs"]
+        Web["Top result URLs"]
+        Parse["headings + entities + readability"]
+        Delete["delete old SerpResult rows"]
+        DB["SerpResult table"]
+        Write["write fresh SerpResult rows"]
+        Resp["query + enriched results"]
+
+        Client --> Route
+        Route --> Context
+        Context --> AuthSvc
+        Route --> API2
+        Route --> Scrape
+        Scrape --> Web
+        Scrape --> Parse
+        Route --> Delete
+        Delete --> DB
+        Route --> Write
+        Write --> DB
+        Route --> Resp
+    end
+
+    classDef node fill:#111111,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef service fill:#143534,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    classDef ext fill:#141b1b,stroke:#d8d8d8,color:#f3f3f3,stroke-width:1.5px;
+    class API,Fn,Work,Deps,Client,Route,Delete,DB,Write,Resp node;
+    class Context,Scrape,Parse service;
+    class AuthSvc,API2,Web ext;
