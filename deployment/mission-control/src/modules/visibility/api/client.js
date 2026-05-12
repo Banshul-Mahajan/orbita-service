@@ -44,6 +44,13 @@ authClient.interceptors.request.use((config) => {
   return config
 })
 
+const platformApi = axios.create({ baseURL: '/api' })
+platformApi.interceptors.request.use((config) => {
+  const token = getCookie('orbit_token') || localStorage.getItem('access_token')
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
 export const authAPI = {
   register: (data) => authClient.post('/register', data),
   login:    (data) => authClient.post('/login', data),
@@ -54,6 +61,12 @@ export const authAPI = {
 export const brandsAPI = {
   list:   ()       => api.get('/brands'),
   create: (data)   => api.post('/brands', data),
+  update: (id, data) => platformApi.put(`/brands/${id}`, {
+    name: data.name,
+    industry: data.industry || null,
+    description: data.description || null,
+    website_url: data.website || data.website_url || null,
+  }),
   get:    (id)     => api.get(`/brands/${id}`),
   delete: (id)     => api.delete(`/brands/${id}`),
 }
