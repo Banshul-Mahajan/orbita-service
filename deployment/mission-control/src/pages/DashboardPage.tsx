@@ -29,7 +29,7 @@ const MODULE_SUBNAV: Record<string, { label: string; path: string }[]> = {
     { label: 'Intent Heatmap', path: 'heatmap' },
     { label: 'Questions',      path: 'questions' },
   ],
-  visibility: [{ label: 'Brands', path: 'brands' }],
+  visibility: [],
   create: [
     { label: 'Dashboard', path: 'dashboard' },
     { label: 'New Brief',  path: 'briefs/new' },
@@ -46,6 +46,7 @@ const MODULE_SUBNAV: Record<string, { label: string; path: string }[]> = {
 };
 
 const MODULE_CLASSES: Record<string, string> = {
+  brands:     'orbit-module',
   discover:   'orbit-module',
   visibility: 'orbit-module',
   create:     'orbit-module',
@@ -54,6 +55,7 @@ const MODULE_CLASSES: Record<string, string> = {
 };
 
 const MODULE_TITLES: Record<string, string> = {
+  brands:     'Brands',
   discover:   'Discover Orbit',
   visibility: 'Visibility Orbit',
   create:     'Create Orbit',
@@ -77,6 +79,7 @@ function DiscoverProjectPicker() {
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: '', description: '' });
   const [createError, setCreateError] = useState('');
+  const [activeBrandId, setActiveBrandId] = useState(getCookie('orbit_brand_id'));
   const qc = useQueryClient();
 
   // Fetch the user's brands to get a brand_id for project scoping
@@ -89,22 +92,39 @@ function DiscoverProjectPicker() {
 
   // Auto-set orbit_brand_id from first available brand if not already set
   useEffect(() => {
-    if ((brands as any[]).length > 0 && !getCookie('orbit_brand_id')) {
-      setCookie('orbit_brand_id', (brands as any[])[0].id);
+    if ((brands as any[]).length > 0 && !activeBrandId) {
+      const firstBrandId = (brands as any[])[0].id;
+      setCookie('orbit_brand_id', firstBrandId);
+      setActiveBrandId(firstBrandId);
     }
-  }, [brands]);
-
-  const activeBrandId = getCookie('orbit_brand_id') || (brands as any[])[0]?.id || '';
+  }, [brands, activeBrandId]);
 
   const { data: projects = [] } = useQuery<any[]>({
     queryKey: ['projects', activeBrandId],
-    queryFn: () => projectsApi.list(),
+    queryFn: () => projectsApi.listForBrand(activeBrandId),
     enabled: !!activeBrandId,
   });
 
+  useEffect(() => {
+    if (selectedProject && activeBrandId && selectedProject.brand_id && selectedProject.brand_id !== activeBrandId) {
+      setSelectedProject(null);
+    }
+  }, [activeBrandId, selectedProject, setSelectedProject]);
+
+  const activeBrand = (brands as any[]).find((b: any) => b.id === activeBrandId);
+
+  const selectBrand = (brand: any) => {
+    setCookie('orbit_brand_id', brand.id);
+    setActiveBrandId(brand.id);
+    setSelectedProject(null);
+    setCreating(false);
+    setCreateError('');
+    qc.invalidateQueries({ queryKey: ['projects'] });
+  };
+
   const createMut = useMutation({
     mutationFn: () => {
-      if (!activeBrandId) throw new Error('No brand found. Create a brand in Visibility Orbit first.');
+      if (!activeBrandId) throw new Error('No brand found. Create a brand from Brands or Discover Onboarding first.');
       setCookie('orbit_brand_id', activeBrandId); // ensure cookie is set
       return projectsApi.create(form.name, form.description);
     },
@@ -127,7 +147,7 @@ function DiscoverProjectPicker() {
       <button onClick={() => setOpen(o => !o)} style={pickerBtnStyle}>
         <FolderOpen size={14} color="#6366f1" />
         <span style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selectedProject ? selectedProject.name : 'Select project'}
+          {selectedProject ? selectedProject.name : activeBrand ? activeBrand.name : 'Select project'}
         </span>
         <ChevronDown size={12} color="#9ca3af" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
       </button>
@@ -143,9 +163,26 @@ function DiscoverProjectPicker() {
         }}>
           {(brands as any[]).length === 0 && (
             <div style={{ padding: '10px 14px', color: '#f59e0b', fontSize: 12, borderBottom: '1px solid #1e293b' }}>
-              No brand found — create one in Visibility Orbit first.
+              No brand yet — start from Discover Onboarding.
             </div>
           )}
+          {(brands as any[]).length > 0 && (
+            <div style={{ borderBottom: '1px solid #1e293b' }}>
+              <div style={{ padding: '8px 14px 5px', fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                Brand
+              </div>
+              {(brands as any[]).map((b: any) => (
+                <button key={b.id} onClick={() => selectBrand(b)}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '8px 14px', background: b.id === activeBrandId ? 'rgba(99,102,241,0.12)' : 'none', border: 'none', cursor: 'pointer', color: '#e2e8f0', fontSize: 13, textAlign: 'left' }}>
+                  <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.name}</span>
+                  {b.id === activeBrandId && <Check size={13} color="#10b981" />}
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{ padding: '8px 14px 5px', fontSize: 10, color: '#64748b', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Projects
+          </div>
           <div style={{ maxHeight: 220, overflowY: 'auto' }}>
             {(projects as any[]).length === 0 && !creating && (
               <div style={{ padding: '0.75rem 1rem', color: '#6b7280', fontSize: 12, textAlign: 'center' }}>
@@ -265,7 +302,7 @@ function BrandContextPicker({ accent = 'emerald' }: { accent?: 'emerald' | 'indi
           <div style={{ maxHeight: 240, overflowY: 'auto' }}>
             {(brands as any[]).length === 0 && (
               <div style={{ padding: '12px 14px', color: '#6b7280', fontSize: 12, textAlign: 'center' }}>
-                No brands yet — create one in Visibility Orbit
+                No brands yet — create one in Brands or Discover Onboarding
               </div>
             )}
             {(brands as any[]).map((b: any) => (
@@ -292,24 +329,27 @@ function VisibilitySubNav({ basePath }: { basePath: string }) {
   const brandId = segments[3];
   const inBrand = segments[2] === 'brands' && !!brandId;
 
-  const tabs = inBrand ? [
-    { label: 'Overview',       path: `brands/${brandId}` },
-    { label: 'Probes',         path: `brands/${brandId}/probes` },
-    { label: 'Alerts',         path: `brands/${brandId}/alerts` },
-    { label: 'Facts',          path: `brands/${brandId}/knowledge` },
-    { label: '← All Brands',  path: 'brands' },
-  ] : [
-    { label: 'Brands', path: 'brands' },
+  if (!inBrand) return null;
+
+  const tabs = [
+    { label: 'Overview',      path: `brands/${brandId}` },
+    { label: 'Probes',        path: `brands/${brandId}/probes` },
+    { label: 'Alerts',        path: `brands/${brandId}/alerts` },
+    { label: 'Facts',         path: `brands/${brandId}/knowledge` },
+    { label: '← All Brands', path: '/dashboard/brands' },
   ];
 
   return (
     <>
-      {tabs.map(({ label, path }) => (
-        <NavLink key={path} to={`${basePath}/${path}`} end={!path.includes('/') || path === `brands/${brandId}`}
-          style={({ isActive }) => navTabStyle(isActive)}>
-          {label}
-        </NavLink>
-      ))}
+      {tabs.map(({ label, path }) => {
+        const to = path.startsWith('/') ? path : `${basePath}/${path}`;
+        return (
+          <NavLink key={path} to={to} end={!path.includes('/') || path === `brands/${brandId}`}
+            style={({ isActive }) => navTabStyle(isActive)}>
+            {label}
+          </NavLink>
+        );
+      })}
     </>
   );
 }
@@ -523,9 +563,10 @@ const DashboardPage: React.FC = () => {
   const user = userStr ? JSON.parse(userStr) : null;
   const orgName = user?.org_name || user?.company_name || null;
 
+  const isVisibilityBrandRoute = activeModule === 'visibility' && segments[2] === 'brands' && !!segments[3];
   const hasSubnav = !isHome && (
     subNav.length > 0 ||
-    activeModule === 'visibility' ||
+    isVisibilityBrandRoute ||
     activeModule === 'discover'
   );
 
