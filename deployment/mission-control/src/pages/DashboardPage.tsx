@@ -143,7 +143,7 @@ function DiscoverProjectPicker() {
         }}>
           {(brands as any[]).length === 0 && (
             <div style={{ padding: '10px 14px', color: '#f59e0b', fontSize: 12, borderBottom: '1px solid #1e293b' }}>
-              No brand yet — start from Discover Onboarding.
+              No brand found — create one in Visibility Orbit first.
             </div>
           )}
           <div style={{ maxHeight: 220, overflowY: 'auto' }}>
@@ -198,8 +198,8 @@ function DiscoverProjectPicker() {
   );
 }
 
-// ── Shared: Brand Picker ──────────────────────────────────────────────────────
-function BrandContextPicker({ accent = 'emerald' }: { accent?: 'emerald' | 'indigo' }) {
+// ── Create: Brand Picker ──────────────────────────────────────────────────────
+function CreateBrandPicker() {
   const [open, setOpen] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<any>(null);
   const qc = useQueryClient();
@@ -235,18 +235,14 @@ function BrandContextPicker({ accent = 'emerald' }: { accent?: 'emerald' | 'indi
     qc.invalidateQueries(); // refresh all queries that depend on brand context
   };
 
-  const accentColor = accent === 'indigo' ? '#818cf8' : '#10b981';
-  const selectedBg = accent === 'indigo' ? 'rgba(99,102,241,0.1)' : 'rgba(16,185,129,0.08)';
-  const selectedBorder = accent === 'indigo' ? 'rgba(99,102,241,0.35)' : 'rgba(16,185,129,0.3)';
-
   return (
     <div style={{ position: 'relative' }}>
       <button onClick={() => setOpen(o => !o)} style={{
         ...pickerBtnStyle,
-        background: selectedBrand ? selectedBg : 'rgba(239,68,68,0.08)',
-        borderColor: selectedBrand ? selectedBorder : 'rgba(239,68,68,0.3)',
+        background: selectedBrand ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+        borderColor: selectedBrand ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)',
       }}>
-        <Globe size={14} color={selectedBrand ? accentColor : '#ef4444'} />
+        <Globe size={14} color={selectedBrand ? '#10b981' : '#ef4444'} />
         <span style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {selectedBrand ? selectedBrand.name : 'Select brand'}
         </span>
@@ -542,9 +538,8 @@ const DashboardPage: React.FC = () => {
             {/* Discover: Project picker lives in topbar */}
             {activeModule === 'discover' && <DiscoverProjectPicker />}
 
-            {/* Brand-scoped modules */}
-            {activeModule === 'create' && <BrandContextPicker />}
-            {activeModule === 'knowledge' && <BrandContextPicker accent="indigo" />}
+            {/* Create: Brand picker lives in topbar */}
+            {activeModule === 'create' && <CreateBrandPicker />}
 
             {orgName && (
               <span style={{ fontSize: 13, color: '#94a3b8', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: 12 }}>

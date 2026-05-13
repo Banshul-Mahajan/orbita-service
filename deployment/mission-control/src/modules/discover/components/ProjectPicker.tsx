@@ -13,13 +13,13 @@ export default function ProjectPicker() {
 
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => projectsApi.list(),
+    queryFn: () => projectsApi.list().then((r) => r.data),
   })
 
   const createMut = useMutation({
     mutationFn: () => projectsApi.create(form.name, form.description),
     onSuccess: (res) => {
-      setSelectedProject(res)
+      setSelectedProject(res.data)
       qc.invalidateQueries({ queryKey: ['projects'] })
       setCreating(false)
       setOpen(false)

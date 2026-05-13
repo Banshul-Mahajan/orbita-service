@@ -49,9 +49,9 @@ export default function Dashboard() {
             {entities?.length === 0 ? (
               <p className="text-sm text-gray-400">No entities yet — add one in the Entities tab.</p>
             ) : (
-              <div>
+              <div className="divide-y divide-gray-100">
                 {entities?.slice(0, 5).map((e: any) => (
-                  <div key={e.id} className="py-3 flex items-center justify-between border-b border-slate-700/60 last:border-b-0">
+                  <div key={e.id} className="py-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-gray-900">{e.name}</p>
                       <p className="text-xs text-gray-400">{e.type} · {e.category || 'no category'}</p>

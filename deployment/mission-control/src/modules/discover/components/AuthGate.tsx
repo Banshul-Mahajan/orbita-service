@@ -44,11 +44,7 @@ function LoginStep({ onDone }: { onDone: () => void }) {
       }))
       onDone()
     } catch (err: any) {
-      let errMsg = 'Authentication failed';
-      if (err.response?.data?.detail) {
-        errMsg = Array.isArray(err.response.data.detail) ? err.response.data.detail[0].msg : err.response.data.detail;
-      }
-      setError(errMsg)
+      setError(err.response?.data?.detail || 'Authentication failed')
     } finally {
       setLoading(false)
     }

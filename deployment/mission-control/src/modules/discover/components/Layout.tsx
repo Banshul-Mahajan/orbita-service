@@ -27,14 +27,9 @@ export default function Layout() {
   const [newName, setNewName] = useState('')
   const qc = useQueryClient()
 
-  // const { data: projects = [] } = useQuery({
-  //   queryKey: ['projects'],
-  //   queryFn: projectsApi.list,
-  // })
-
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => projectsApi.list(),
+    queryFn: projectsApi.list,
   })
 
   const createMut = useMutation({

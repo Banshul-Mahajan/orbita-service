@@ -157,7 +157,7 @@ export default function EntityDetail() {
   return (
     <div>
       <div className="mb-2">
-        <Link to="../entities" className="text-sm text-brand-600 hover:underline">← Entities</Link>
+        <Link to="/entities" className="text-sm text-brand-600 hover:underline">← Entities</Link>
       </div>
 
       <PageHeader

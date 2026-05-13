@@ -7,7 +7,6 @@ export const getCookie = (name: string) => {
 
 export const BRAND_ID = () => getCookie('orbit_brand_id')
 export const ORG_ID = () => getCookie('orbit_org_id')
-const TOKEN = () => getCookie('orbit_token') || localStorage.getItem('access_token') || ''
 
 const api = axios.create({
   baseURL: '/api/knowledge',
@@ -26,7 +25,7 @@ const getContextHeaders = () => {
 }
 
 api.interceptors.request.use((config) => {
-  const token = TOKEN()
+  const token = getCookie('orbit_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   Object.assign(config.headers, getContextHeaders())
   return config
@@ -42,9 +41,7 @@ export const getEntity = (id: string) =>
   api.get(`/entities/${id}`).then(r => r.data)
 
 export const createEntity = (data: object) =>
-  BRAND_ID()
-    ? api.post('/entities', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
-    : Promise.reject(new Error('Select a brand before creating Knowledge Core entities.'))
+  api.post('/entities', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
 
 export const updateEntity = (id: string, data: object) =>
   api.put(`/entities/${id}`, data).then(r => r.data)
@@ -74,9 +71,7 @@ export const getSources = (type?: string) =>
     : Promise.resolve([])
 
 export const addSource = (data: object) =>
-  BRAND_ID()
-    ? api.post('/sources', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
-    : Promise.reject(new Error('Select a brand before adding Knowledge Core citations.'))
+  api.post('/sources', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
 
 export const deleteSource = (id: string) =>
   api.delete(`/sources/${id}`).then(r => r.data)
@@ -94,9 +89,7 @@ export const getAuthors = () =>
     : Promise.resolve([])
 
 export const createAuthor = (data: object) =>
-  BRAND_ID()
-    ? api.post('/authors', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
-    : Promise.reject(new Error('Select a brand before creating Knowledge Core authors.'))
+  api.post('/authors', { ...data, brand_id: BRAND_ID(), organization_id: ORG_ID() }).then(r => r.data)
 
 export const updateAuthor = (id: string, data: object) =>
   api.put(`/authors/${id}`, data).then(r => r.data)

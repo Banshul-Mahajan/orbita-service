@@ -24,7 +24,7 @@ const App: React.FC = () => {
           <Route path="knowledge/*" element={<KnowledgeApp />} />
           <Route path="settings" element={<div>Settings UI will be injected here.</div>} />
         </Route>
-        <Route path="*" element={<div style={{ padding: '2rem', color: 'white' }}><h2>404 Not Found</h2><p>No route matches this URL.</p></div>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );

@@ -20,7 +20,7 @@ export default function KnowledgeApp() {
   return (
     <Routes>
       <Route element={<KnowledgeLayout />}>
-        <Route index element={<Dashboard />} />
+        <Route path="/"              element={<Dashboard />} />
         <Route path="entities"      element={<EntitiesPage />} />
         <Route path="entities/:id"  element={<EntityDetail />} />
         <Route path="sources"       element={<SourcesPage />} />

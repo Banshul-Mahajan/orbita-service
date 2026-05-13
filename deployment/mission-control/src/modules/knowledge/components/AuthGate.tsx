@@ -34,13 +34,7 @@ function LoginStep({ onDone }: { onDone: () => void }) {
       setCookie('orbit_org_id', data.org_id)
       localStorage.setItem('orbit_user', JSON.stringify({ id: data.user_id, email: data.email, full_name: data.full_name, org_id: data.org_id }))
       onDone()
-    } catch (err: any) {
-      let errMsg = 'Authentication failed';
-      if (err.response?.data?.detail) {
-        errMsg = Array.isArray(err.response.data.detail) ? err.response.data.detail[0].msg : err.response.data.detail;
-      }
-      setError(errMsg);
-    }
+    } catch (err: any) { setError(err.response?.data?.detail || 'Authentication failed') }
     finally { setLoading(false) }
   }
 

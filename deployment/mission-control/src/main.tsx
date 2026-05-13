@@ -7,7 +7,7 @@ import './index.css';
 import './orbit-modules.css';
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { staleTime: 0, retry: 1 } },
+  defaultOptions: { queries: { staleTime: 1000 * 60 * 5, retry: 1 } },
 });
 
 ReactDOM.createRoot(document.getElementById('root')!).render(

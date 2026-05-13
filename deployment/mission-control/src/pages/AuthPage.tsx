@@ -70,17 +70,7 @@ const AuthPage: React.FC = () => {
       }
     } catch (error: any) {
       console.error("Auth error", error);
-      let errMsg = "Authentication failed. Please try again.";
-      if (error.response?.data?.detail) {
-        if (Array.isArray(error.response.data.detail)) {
-          // FastAPI 422 validation error
-          errMsg = error.response.data.detail[0].msg;
-        } else {
-          // Standard string error
-          errMsg = error.response.data.detail;
-        }
-      }
-      setErrorMsg(errMsg);
+      setErrorMsg(error.response?.data?.detail || "Authentication failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -249,12 +239,7 @@ const AuthPage: React.FC = () => {
               Google
             </button>
             <button className="btn-social">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 23 23">
-                <path fill="#f35325" d="M1 1h10v10H1z"/>
-                <path fill="#81bc06" d="M12 1h10v10H12z"/>
-                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-                <path fill="#ffba08" d="M12 12h10v10H12z"/>
-              </svg>
+              <img src="https://www.svgrepo.com/show/475662/microsoft-color.svg" alt="Microsoft" width="18" height="18" />
               Microsoft
             </button>
           </div>

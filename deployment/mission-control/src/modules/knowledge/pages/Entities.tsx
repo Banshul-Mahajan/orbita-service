@@ -13,11 +13,11 @@ const ENTITY_TYPES = [
 ]
 
 const TYPE_COLORS: Record<string, string> = {
-  product: 'bg-blue-900/40 text-blue-300',
-  person:  'bg-purple-900/40 text-purple-300',
-  award:   'bg-yellow-900/40 text-yellow-300',
-  stat:    'bg-green-900/40 text-green-300',
-  policy:  'bg-orange-900/40 text-orange-300',
+  product: 'bg-blue-50 text-blue-700',
+  person:  'bg-purple-50 text-purple-700',
+  award:   'bg-yellow-50 text-yellow-700',
+  stat:    'bg-green-50 text-green-700',
+  policy:  'bg-orange-50 text-orange-700',
 }
 
 function CreateEntityModal({ onClose }: { onClose: () => void }) {
@@ -115,22 +115,22 @@ export default function EntitiesPage() {
       ) : entities?.length === 0 ? (
         <EmptyState message="No entities yet. Click '+ New Entity' to add one." icon="📦" />
       ) : (
-        <div className="card divide-y divide-gray-800">
+        <div className="card divide-y divide-gray-100">
           {entities?.map((e: any) => (
-            <div key={e.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-800/60 transition-colors">
+            <div key={e.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <Link to={String(e.id)} className="text-sm font-semibold text-gray-100 hover:text-brand-400 truncate">
+                  <Link to={`/entities/${e.id}`} className="text-sm font-semibold text-gray-900 hover:text-brand-600 truncate">
                     {e.name}
                   </Link>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[e.type] || 'bg-gray-800 text-gray-300'}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[e.type] || 'bg-gray-100 text-gray-600'}`}>
                     {e.type}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400">{e.category || 'No category'} · {e.fact_count} facts</p>
               </div>
               <div className="flex items-center gap-2 ml-4">
-                <Link to={String(e.id)} className="btn-secondary text-xs py-1">
+                <Link to={`/entities/${e.id}`} className="btn-secondary text-xs py-1">
                   View →
                 </Link>
                 <button

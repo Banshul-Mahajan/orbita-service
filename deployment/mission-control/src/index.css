@@ -182,7 +182,6 @@ p {
   width: 100%;
   max-width: 450px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  color: #111827;
 }
 
 .auth-tabs {
@@ -208,22 +207,19 @@ p {
   background: white;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   color: #111827;
-  font-weight: 700;
 }
 
 .auth-tab:not(.active) {
-  color: #3f3f46;
-  font-weight: 500;
+  color: #71717a;
 }
 
 .auth-form-header h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #111827 !important;
 }
 
 .auth-form-header p {
-  color: #52525b !important;
+  color: #71717a;
   font-size: 14px;
   margin-bottom: 2rem;
 }
@@ -351,13 +347,13 @@ p {
   text-align: center;
   margin-top: 1.5rem;
   font-size: 13px;
-  color: #3f3f46;
+  color: #71717a;
 }
 
 .auth-footer a {
-  color: #10b981; /* bright green for good contrast on white */
+  color: var(--primary);
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 

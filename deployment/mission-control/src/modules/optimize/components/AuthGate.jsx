@@ -23,11 +23,7 @@ async function authRequest(path, options = {}) {
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({}))
-    let errMsg = `Authentication failed (${response.status})`;
-    if (error.detail) {
-      errMsg = Array.isArray(error.detail) ? error.detail[0].msg : error.detail;
-    }
-    throw new Error(errMsg)
+    throw new Error(error.detail || `Authentication failed (${response.status})`)
   }
 
   return response.json()

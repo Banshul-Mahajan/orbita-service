@@ -221,37 +221,9 @@ export default function EditorPage() {
     }
   }
 
-  // const copyToClipboard = () => {
-  //   navigator.clipboard.writeText(body)
-  //   toast.success('Copied to clipboard')
-  // }
-
-  const copyToClipboard = async () => {
-    if (!body.trim()) {
-      toast.error('Nothing to copy yet')
-      return
-    }
-
-    try {
-      if (navigator.clipboard?.writeText && window.isSecureContext) {
-        await navigator.clipboard.writeText(body)
-      } else {
-        const textArea = document.createElement('textarea')
-        textArea.value = body
-        textArea.setAttribute('readonly', '')
-        textArea.style.position = 'fixed'
-        textArea.style.top = '-9999px'
-        textArea.style.left = '-9999px'
-        document.body.appendChild(textArea)
-        textArea.select()
-        const copied = document.execCommand('copy')
-        document.body.removeChild(textArea)
-        if (!copied) throw new Error('copy command failed')
-      }
-      toast.success('Copied to clipboard')
-    } catch (e) {
-      toast.error('Copy failed. Select the article text and copy manually.')
-    }
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(body)
+    toast.success('Copied to clipboard')
   }
 
   // ── Entity coverage ───────────────────────────────────────────────────────

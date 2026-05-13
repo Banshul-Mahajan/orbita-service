@@ -131,12 +131,12 @@ export default function Onboarding() {
                   <p><span className="text-gray-200 font-medium">Pages scanned:</span> {active.scan?.pages_scanned ?? 0}</p>
                   <p><span className="text-gray-200 font-medium">Keywords:</span> {active.keyword_summary.total} generated, {active.keyword_summary.selected} pre-selected</p>
                 </div>
-                <div className="flex gap-3 mt-5">
-                  <Link to="../keywords" className="btn-primary inline-flex items-center gap-2">
-                    Review Keywords <ArrowRight size={16} />
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Link to="/keywords" className="btn-primary inline-flex items-center gap-2">
+                    Review Keywords <ArrowRight size={14} />
                   </Link>
-                  <Link to="../competitors" className="btn-secondary inline-flex items-center gap-2">
-                    Find Competitors
+                  <Link to="/competitors" className="btn-secondary inline-flex items-center gap-2">
+                    Find Competitors <ArrowRight size={14} />
                   </Link>
                 </div>
               </div>
