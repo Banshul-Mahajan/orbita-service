@@ -4,3 +4,24 @@
 **/.env
 **/.env.*
 !.env.example
+
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Python virtual environments
+venv/
+.venv/
+env/
+**/venv/
+**/.venv/
+**/env/
+
+# Build output
+dist/
+build/
+__pycache__/
+**/dist/
+**/build/
+**/__pycache__/
+*.pyc
