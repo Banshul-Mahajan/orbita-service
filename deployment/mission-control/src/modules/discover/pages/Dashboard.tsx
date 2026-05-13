@@ -225,56 +225,56 @@ export default function Dashboard() {
     {
       step: '01', title: 'Website Onboarding',
       desc: 'Add company details and scan the website to discover seed topics.',
-      to: '/onboarding',
+      to: '/dashboard/discover/onboarding',
       icon: <Globe2 size={16} className="text-blue-400" />,
       done: onboardingDone,
     },
     {
       step: '02', title: 'Select Keywords',
       desc: 'Review keyword opportunities across informational, commercial, transactional, and navigational intent.',
-      to: '/keywords',
+      to: '/dashboard/discover/keywords',
       icon: <KeySquare size={16} className="text-blue-400" />,
       done: kwDone,
     },
     {
       step: '03', title: 'Find Competitors',
       desc: 'See who ranks for selected keywords and what pages are winning.',
-      to: '/competitors',
+      to: '/dashboard/discover/competitors',
       icon: <Users size={16} className="text-purple-400" />,
       done: competitorsDone,
     },
     {
       step: '04', title: 'Create Content',
       desc: 'Generate a draft from selected keywords and competitor insights.',
-      to: '/content',
+      to: '/dashboard/discover/content',
       icon: <FileText size={16} className="text-green-400" />,
       done: contentDone,
     },
     {
       step: '05', title: 'Analyze SERP',
       desc: 'Scrape top Google results to see what ranks and why.',
-      to: '/serp',
+      to: '/dashboard/discover/serp',
       icon: <Search size={16} className="text-purple-400" />,
       done: serpDone,
     },
     {
       step: '06', title: 'Scan AI Engines',
       desc: 'Query ChatGPT, Gemini, and Perplexity and compare their citations.',
-      to: '/ai-scan',
+      to: '/dashboard/discover/ai-scan',
       icon: <Bot size={16} className="text-green-400" />,
       done: aiDone,
     },
     {
       step: '07', title: 'View Heatmap',
       desc: 'See the gap between Google coverage and AI coverage for your topic.',
-      to: '/heatmap',
+      to: '/dashboard/discover/heatmap',
       icon: <Search size={16} className="text-orange-400" />,
       done: serpDone && aiDone,
     },
     {
       step: '08', title: 'Mine Questions',
       desc: 'Aggregate PAA and AI-generated questions for FAQ content.',
-      to: '/questions',
+      to: '/dashboard/discover/questions',
       icon: <HelpCircle size={16} className="text-pink-400" />,
       done: qDone,
     },
@@ -294,28 +294,28 @@ export default function Dashboard() {
           icon={<KeySquare size={16} className="text-blue-400" />}
           label="Keywords discovered"
           value={kwData?.total_keywords ?? '—'}
-          to="/keywords"
+          to="/dashboard/discover/keywords"
           color="bg-blue-900/40"
         />
         <StatCard
           icon={<Search size={16} className="text-purple-400" />}
           label="SERP results scraped"
           value={serpCount?.total_results ?? '—'}
-          to="/serp"
+          to="/dashboard/discover/serp"
           color="bg-purple-900/40"
         />
         <StatCard
           icon={<Bot size={16} className="text-green-400" />}
           label="AI scans run"
           value={aiCount?.total_queries ?? '—'}
-          to="/ai-scan"
+          to="/dashboard/discover/ai-scan"
           color="bg-green-900/40"
         />
         <StatCard
           icon={<HelpCircle size={16} className="text-pink-400" />}
           label="Questions mined"
           value={qCount?.total_questions ?? '—'}
-          to="/questions"
+          to="/dashboard/discover/questions"
           color="bg-pink-900/40"
         />
       </div>

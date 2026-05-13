@@ -14,7 +14,7 @@ export default function Login() {
     setLoading(true)
     try {
       await login(form.email, form.password)
-      navigate('/brands')
+      navigate('/dashboard/visibility/brands')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Login failed')
     } finally {
@@ -63,7 +63,7 @@ export default function Login() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           No account?{' '}
-          <Link to="/register" className="text-indigo-400 hover:text-indigo-300">
+          <Link to="/" className="text-indigo-400 hover:text-indigo-300">
             Create one
           </Link>
         </p>

@@ -120,7 +120,7 @@ export default function EntitiesPage() {
             <div key={e.id} className="flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <Link to={`/entities/${e.id}`} className="text-sm font-semibold text-gray-900 hover:text-brand-600 truncate">
+                  <Link to={`/dashboard/knowledge/entities/${e.id}`} className="text-sm font-semibold text-gray-900 hover:text-brand-600 truncate">
                     {e.name}
                   </Link>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${TYPE_COLORS[e.type] || 'bg-gray-100 text-gray-600'}`}>
@@ -130,7 +130,7 @@ export default function EntitiesPage() {
                 <p className="text-xs text-gray-400">{e.category || 'No category'} · {e.fact_count} facts</p>
               </div>
               <div className="flex items-center gap-2 ml-4">
-                <Link to={`/entities/${e.id}`} className="btn-secondary text-xs py-1">
+                <Link to={`/dashboard/knowledge/entities/${e.id}`} className="btn-secondary text-xs py-1">
                   View →
                 </Link>
                 <button

@@ -3,9 +3,9 @@ import { LayoutDashboard, BookOpen, PenLine, Database, LogOut, Cpu } from 'lucid
 import useAuth from '../hooks/useAuth'
 
 const nav = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/briefs/new', icon: PenLine, label: 'New Brief' },
-  { to: '/corpus', icon: Database, label: 'Corpus' },
+  { to: '/dashboard/create/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/dashboard/create/briefs/new', icon: PenLine, label: 'New Brief' },
+  { to: '/dashboard/create/corpus', icon: Database, label: 'Corpus' },
 ]
 
 export default function Layout() {
@@ -14,7 +14,7 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login')
+    navigate('/')
   }
 
   return (

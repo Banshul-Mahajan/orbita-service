@@ -56,7 +56,7 @@ export default function RegisterPage() {
           </button>
         </form>
         <p style={styles.footer}>
-          Already have an account? <Link to="/login" style={styles.link}>Sign in</Link>
+          Already have an account? <Link to="/" style={styles.link}>Sign in</Link>
         </p>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>

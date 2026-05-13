@@ -10,15 +10,15 @@ import { projectsApi } from '../api/client'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 const NAV = [
-  { to: '/',             icon: LayoutDashboard, label: 'Dashboard'      },
-  { to: '/onboarding',   icon: Globe2,          label: 'Onboarding'     },
-  { to: '/keywords',     icon: KeySquare,        label: 'Keywords'       },
-  { to: '/competitors',  icon: Users,            label: 'Competitors'    },
-  { to: '/content',      icon: FileText,         label: 'Create Orbit'   },
-  { to: '/serp',         icon: Search,           label: 'SERP Analyzer'  },
-  { to: '/ai-scan',      icon: Bot,              label: 'AI Scanner'     },
-  { to: '/heatmap',      icon: Grid3x3,          label: 'Intent Heatmap' },
-  { to: '/questions',    icon: HelpCircle,        label: 'Questions'      },
+  { to: '/dashboard/discover',             icon: LayoutDashboard, label: 'Dashboard'      },
+  { to: '/dashboard/discover/onboarding',  icon: Globe2,          label: 'Onboarding'     },
+  { to: '/dashboard/discover/keywords',    icon: KeySquare,       label: 'Keywords'       },
+  { to: '/dashboard/discover/competitors', icon: Users,           label: 'Competitors'    },
+  { to: '/dashboard/discover/content',     icon: FileText,        label: 'Create Orbit'   },
+  { to: '/dashboard/discover/serp',        icon: Search,          label: 'SERP Analyzer'  },
+  { to: '/dashboard/discover/ai-scan',     icon: Bot,             label: 'AI Scanner'     },
+  { to: '/dashboard/discover/heatmap',     icon: Grid3x3,         label: 'Intent Heatmap' },
+  { to: '/dashboard/discover/questions',   icon: HelpCircle,      label: 'Questions'      },
 ]
 
 export default function Layout() {
@@ -105,7 +105,7 @@ export default function Layout() {
             <NavLink
               key={to}
               to={to}
-              end={to === '/'}
+              end={to === '/dashboard/discover'}
               className={({ isActive }) =>
                 `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                   isActive

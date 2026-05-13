@@ -51,7 +51,7 @@ export default function LoginPage() {
           </button>
         </form>
         <p style={styles.footer}>
-          No account? <Link to="/register" style={styles.link}>Create one</Link>
+          No account? <Link to="/" style={styles.link}>Create one</Link>
         </p>
       </div>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>

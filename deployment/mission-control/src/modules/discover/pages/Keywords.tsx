@@ -173,7 +173,7 @@ export default function Keywords() {
                   {opportunities?.total_keywords ?? 0} generated · {opportunities?.selected_keywords ?? 0} selected
                 </p>
               </div>
-              <Link to="/competitors" className="btn-primary flex justify-center items-center gap-2" style={{ flex: 1, padding: '8px 16px', whiteSpace: 'nowrap' }}>
+              <Link to="/dashboard/discover/competitors" className="btn-primary flex justify-center items-center gap-2" style={{ flex: 1, padding: '8px 16px', whiteSpace: 'nowrap' }}>
                 Find Competitors <ArrowRight size={14} />
               </Link>
             </div>

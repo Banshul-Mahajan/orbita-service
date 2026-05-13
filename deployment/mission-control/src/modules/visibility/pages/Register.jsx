@@ -16,7 +16,7 @@ export default function Register() {
     setLoading(true)
     try {
       await register(form)
-      navigate('/brands')
+      navigate('/dashboard/visibility/brands')
       toast.success('Workspace created!')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Registration failed')
@@ -60,7 +60,7 @@ export default function Register() {
 
         <p className="text-center text-sm text-gray-500 mt-4">
           Already have an account?{' '}
-          <Link to="/login" className="text-indigo-400 hover:text-indigo-300">Sign in</Link>
+          <Link to="/" className="text-indigo-400 hover:text-indigo-300">Sign in</Link>
         </p>
       </div>
     </div>

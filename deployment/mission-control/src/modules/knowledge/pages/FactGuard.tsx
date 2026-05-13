@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { verifyClaim } from '../api/client'
 import { PageHeader, ConfidenceBadge } from '../components'
@@ -119,7 +120,7 @@ export default function FactGuardPage() {
           {result.status === 'unverified' && (
             <div className="mt-4 p-3 bg-white rounded-lg border border-red-200 text-sm text-red-700">
               <strong>Action:</strong> Add the correct fact to your{' '}
-              <a href="/entities" className="underline font-medium">Entities</a> page, then re-test this claim.
+              <Link to="/dashboard/knowledge/entities" className="underline font-medium">Entities</Link> page, then re-test this claim.
             </div>
           )}
         </div>

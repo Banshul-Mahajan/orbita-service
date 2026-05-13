@@ -2,11 +2,11 @@ import { Link, useLocation } from 'react-router-dom'
 
 // ── Sidebar nav ──────────────────────────────────────────────────────────
 const NAV = [
-  { to: '/',          label: 'Dashboard',   icon: '⬡' },
-  { to: '/entities',  label: 'Entities',    icon: '📦' },
-  { to: '/sources',   label: 'Citations',   icon: '🔗' },
-  { to: '/authors',   label: 'Authors',     icon: '👤' },
-  { to: '/factguard', label: 'FactGuard',   icon: '🛡️' },
+  { to: '/dashboard/knowledge',           label: 'Dashboard', icon: '⬡' },
+  { to: '/dashboard/knowledge/entities',  label: 'Entities',  icon: '📦' },
+  { to: '/dashboard/knowledge/sources',   label: 'Citations', icon: '🔗' },
+  { to: '/dashboard/knowledge/authors',   label: 'Authors',   icon: '👤' },
+  { to: '/dashboard/knowledge/factguard', label: 'FactGuard', icon: '🛡️' },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
           {NAV.map(({ to, label, icon }) => {
-            const active = pathname === to || (to !== '/' && pathname.startsWith(to))
+            const active = pathname === to || (to !== '/dashboard/knowledge' && pathname.startsWith(to))
             return (
               <Link
                 key={to}

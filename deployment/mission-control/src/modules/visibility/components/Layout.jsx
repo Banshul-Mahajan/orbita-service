@@ -50,17 +50,17 @@ export default function Layout() {
           <p className="px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider mb-2">
             Workspace
           </p>
-          <NavItem to="/brands" icon="🏢" label="Brands" />
+          <NavItem to="/dashboard/visibility/brands" icon="🏢" label="Brands" />
 
           {brandId && (
             <>
               <p className="px-3 text-xs font-semibold text-gray-600 uppercase tracking-wider mt-4 mb-2">
                 Brand
               </p>
-              <NavItem to={`/brands/${brandId}`}            icon="📊" label="Dashboard" />
-              <NavItem to={`/brands/${brandId}/knowledge`}  icon="🧠" label="Knowledge Core" />
-              <NavItem to={`/brands/${brandId}/probes`}     icon="🔍" label="Probe Runner" />
-              <NavItem to={`/brands/${brandId}/alerts`}     icon="🚨" label="Alerts" />
+              <NavItem to={`/dashboard/visibility/brands/${brandId}`}            icon="📊" label="Dashboard" />
+              <NavItem to={`/dashboard/visibility/brands/${brandId}/knowledge`}  icon="🧠" label="Knowledge Core" />
+              <NavItem to={`/dashboard/visibility/brands/${brandId}/probes`}     icon="🔍" label="Probe Runner" />
+              <NavItem to={`/dashboard/visibility/brands/${brandId}/alerts`}     icon="🚨" label="Alerts" />
             </>
           )}
         </nav>
@@ -70,7 +70,7 @@ export default function Layout() {
           <div className="px-3 py-2 rounded-lg bg-gray-800">
             <p className="text-xs text-gray-400 truncate">{user?.email}</p>
             <button
-              onClick={() => { logout(); navigate('/login') }}
+              onClick={() => { logout(); navigate('/') }}
               className="text-xs text-indigo-400 hover:text-indigo-300 mt-1"
             >
               Sign out
