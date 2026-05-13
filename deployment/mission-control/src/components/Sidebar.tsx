@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Building2,
   Search,
   Globe,
   PenTool,
@@ -16,7 +15,6 @@ import {
 
 const NAV_ITEMS = [
   { to: '/dashboard',            label: 'Mission Control', Icon: LayoutDashboard, end: true },
-  { to: '/dashboard/brands',     label: 'Brands',          Icon: Building2 },
   { to: '/dashboard/discover',   label: 'Discover Orbit',  Icon: Search },
   { to: '/dashboard/visibility', label: 'Visibility Orbit',Icon: Globe },
   { to: '/dashboard/create',     label: 'Create Orbit',    Icon: PenTool },

@@ -221,6 +221,11 @@ export default function EditorPage() {
     }
   }
 
+  // const copyToClipboard = () => {
+  //   navigator.clipboard.writeText(body)
+  //   toast.success('Copied to clipboard')
+  // }
+
   const copyToClipboard = async () => {
     if (!body.trim()) {
       toast.error('Nothing to copy yet')

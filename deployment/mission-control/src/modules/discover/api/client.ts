@@ -30,6 +30,8 @@ const getContextHeaders = () => {
 }
 
 api.interceptors.request.use((config) => {
+  // const match = document.cookie.match(new RegExp('(^| )orbit_token=([^;]+)'))
+  // const token = match ? match[2] : null
   const token = getToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   Object.assign(config.headers, getContextHeaders())
@@ -43,6 +45,8 @@ const authApi = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 authApi.interceptors.request.use((config) => {
+  // const match = document.cookie.match(new RegExp('(^| )orbit_token=([^;]+)'))
+  // const token = match ? match[2] : null
   const token = getToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
@@ -60,6 +64,11 @@ async function call<T>(promise: Promise<{ data: ApiResponse<T> }>): Promise<T> {
   if (!data.success) throw new Error(data.error ?? 'Unknown API error')
   return data.data
 }
+
+// export const getCookie = (name: string) => {
+//   const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'))
+//   return match ? match[2] : ''
+// }
 
 // ── Brands (via Auth Service) ────────────────────────────────────────────────
 export interface Brand {
@@ -99,6 +108,8 @@ export const brandsApi = {
   },
 }
 
+
+
 // ── Projects (via Auth Service) ───────────────────────────────────────────────
 export interface Project {
   id: string
@@ -112,17 +123,17 @@ export interface Project {
 }
 
 export const projectsApi = {
-  list: async (): Promise<Project[]> => {
-    const brandId = getCookie('orbit_brand_id');
+  // list: async (): Promise<Project[]> => {
+  //   const brandId = getCookie('orbit_brand_id');
+  list: async (brand_id?: string): Promise<Project[]> => {
+    const brandId = brand_id || getCookie('orbit_brand_id');
     if (!brandId) return []
     const { data } = await authApi.get(`/brands/${brandId}/projects`)
     return data
   },
-  listForBrand: async (brand_id: string): Promise<Project[]> => {
-    if (!brand_id) return []
-    const { data } = await authApi.get(`/brands/${brand_id}/projects`)
-    return data
-  },
+  
+  // create: async (name: string, description?: string): Promise<Project> => {
+  //   const brandId = getCookie('orbit_brand_id');
   create: async (
     payloadOrName: string | { name: string; description?: string; target_audience?: string; locale?: string },
     description?: string,
@@ -130,10 +141,7 @@ export const projectsApi = {
   ): Promise<Project> => {
     const brandId = brand_id || getCookie('orbit_brand_id');
     if (!brandId) throw new Error('No brand selected. Set orbit_brand_id cookie first.')
-    const payload = typeof payloadOrName === 'string'
-      ? { name: payloadOrName, description }
-      : payloadOrName
-    const { data } = await authApi.post(`/brands/${brandId}/projects`, payload)
+    const { data } = await authApi.post(`/brands/${brandId}/projects`, { name, description })
     return data
   },
   delete: (id: string) => call<{ deleted: string }>(api.delete(`/projects/${id}`)),

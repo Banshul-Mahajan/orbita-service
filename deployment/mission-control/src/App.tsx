@@ -9,7 +9,6 @@ import VisibilityApp from './modules/visibility/App';
 import CreateApp from './modules/create/App';
 import OptimizeApp from './modules/optimize/App';
 import KnowledgeApp from './modules/knowledge/App';
-import BrandList from './modules/brands/pages/BrandList';
 
 const App: React.FC = () => {
   return (
@@ -19,7 +18,6 @@ const App: React.FC = () => {
         <Route path="/dashboard" element={<DashboardPage />}>
           {/* Nested routes for components */}
           <Route path="discover/*" element={<DiscoverApp />} />
-          <Route path="brands" element={<BrandList />} />
           <Route path="visibility/*" element={<VisibilityApp />} />
           <Route path="create/*" element={<CreateApp />} />
           <Route path="optimize/*" element={<OptimizeApp />} />
