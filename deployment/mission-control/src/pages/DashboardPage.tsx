@@ -226,7 +226,7 @@ function BrandSwitcher() {
   // Load all brands
   const { data: brands = [] } = useQuery<Brand[]>({
     queryKey: ['brands'],
-    queryFn: () => axios.get('/api/brands', { headers: auth }).then(r => r.data),
+    queryFn: () => axios.get('/api/brands/', { headers: auth }).then(r => r.data),
     onSuccess: (data: Brand[]) => {
       setBrands(data);
       if (!currentBrand && data.length > 0) setCurrentBrand(data[0]);

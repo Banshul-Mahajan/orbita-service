@@ -49,10 +49,10 @@ const BrandModal: React.FC<BrandModalProps> = ({ brand, onClose, onSaved }) => {
       if (!form.name.trim()) throw new Error('Brand name is required.');
       const payload = { ...form };
       if (isEdit) {
-        const { data } = await axios.put(`/api/brands/${brand!.id}`, payload, { headers: authHeader() });
+        const { data } = await axios.put(`/api/brands/${brand!.id}/`, payload, { headers: authHeader() });
         return data as Brand;
       }
-      const { data } = await axios.post('/api/brands', payload, { headers: authHeader() });
+      const { data } = await axios.post('/api/brands/', payload, { headers: authHeader() });
       return data as Brand;
     },
     onSuccess: (saved) => {
@@ -269,7 +269,7 @@ const BrandsPage: React.FC = () => {
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
     queryKey: ['brands'],
     queryFn: async () => {
-      const { data } = await axios.get('/api/brands', { headers: authHeader() });
+      const { data } = await axios.get('/api/brands/', { headers: authHeader() });
       return data as Brand[];
     },
     onSuccess: (data: Brand[]) => {
@@ -280,7 +280,7 @@ const BrandsPage: React.FC = () => {
   } as any);
 
   const deleteMut = useMutation({
-    mutationFn: (id: string) => axios.delete(`/api/brands/${id}`, { headers: authHeader() }),
+    mutationFn: (id: string) => axios.delete(`/api/brands/${id}/`, { headers: authHeader() }),
     onSuccess: (_d, id) => {
       qc.invalidateQueries({ queryKey: ['brands'] });
       if (currentBrand?.id === id) setCurrentBrand(null);
