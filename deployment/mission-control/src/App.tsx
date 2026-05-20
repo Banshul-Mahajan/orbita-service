@@ -9,6 +9,7 @@ import VisibilityApp from './modules/visibility/App';
 import CreateApp from './modules/create/App';
 import OptimizeApp from './modules/optimize/App';
 import KnowledgeApp from './modules/knowledge/App';
+import BrandsPage from './modules/brands/BrandsPage';
 
 const App: React.FC = () => {
   return (
@@ -22,6 +23,7 @@ const App: React.FC = () => {
           <Route path="create/*" element={<CreateApp />} />
           <Route path="optimize/*" element={<OptimizeApp />} />
           <Route path="knowledge/*" element={<KnowledgeApp />} />
+          <Route path="brands" element={<BrandsPage />} />
           <Route path="settings" element={<div>Settings UI will be injected here.</div>} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

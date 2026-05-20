@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import apiClient from '../api/client';
 
+const MicrosoftLogo: React.FC = () => (
+  <span className="microsoft-logo" aria-hidden="true">
+    <span className="microsoft-logo-tile microsoft-logo-red" />
+    <span className="microsoft-logo-tile microsoft-logo-green" />
+    <span className="microsoft-logo-tile microsoft-logo-blue" />
+    <span className="microsoft-logo-tile microsoft-logo-yellow" />
+  </span>
+);
+
 const AuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(false);
   const [selectedPills, setSelectedPills] = useState<string[]>([]);
@@ -51,22 +60,25 @@ const AuthPage: React.FC = () => {
       // Save token — localStorage for MC, cookie for module clients (Visibility, Create, etc.)
       if (response.data && response.data.access_token) {
         const token = response.data.access_token;
-        localStorage.setItem('access_token', token);
-        localStorage.setItem('user', JSON.stringify({
+        const userSession = {
           user_id: response.data.user_id,
+          id: response.data.user_id,
           org_id: response.data.org_id,
           email: response.data.email,
           full_name: response.data.full_name,
           org_name: response.data.org_name,
           company_name: response.data.org_name,
-        }));
+        };
+        localStorage.setItem('access_token', token);
+        localStorage.setItem('user', JSON.stringify(userSession));
+        localStorage.setItem('orbit_user', JSON.stringify(userSession));
         // Also set orbit_token cookie so module API clients can find it
         document.cookie = `orbit_token=${token};path=/;max-age=86400;SameSite=Lax`;
         // Set org context cookie for modules that need it
         if (response.data.org_id) {
           document.cookie = `orbit_org_id=${response.data.org_id};path=/;max-age=86400;SameSite=Lax`;
         }
-        navigate('/dashboard');
+        navigate('/dashboard', { replace: true });
       }
     } catch (error: any) {
       console.error("Auth error", error);
@@ -239,7 +251,7 @@ const AuthPage: React.FC = () => {
               Google
             </button>
             <button className="btn-social">
-              <img src="https://www.svgrepo.com/show/475662/microsoft-color.svg" alt="Microsoft" width="18" height="18" />
+              <MicrosoftLogo />
               Microsoft
             </button>
           </div>

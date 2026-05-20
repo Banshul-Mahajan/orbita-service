@@ -24,7 +24,10 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    const requestUrl = error.config?.url ?? '';
+    const isAuthRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/register');
+
+    if (error.response && error.response.status === 401 && !isAuthRequest) {
       // Clear token and redirect to login if unauthorized
       localStorage.removeItem('access_token');
       localStorage.removeItem('user');

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { promptsAPI, probesAPI } from '../api/client'
+import api from '../api/client'
 import toast from 'react-hot-toast'
 
 const ENGINES = [
@@ -11,6 +12,22 @@ const ENGINES = [
 
 const ENGINE_COLORS = { claude: 'text-purple-400', gpt4: 'text-emerald-400', gemini: 'text-blue-400' }
 
+// ── Default prompts — seeded per brand using the brand name ───────────────────
+// These are created in the DB on first load so they get real IDs and work with
+// the existing probesAPI.run endpoint (no backend changes needed).
+const buildDefaultPrompts = (brandName) => [
+  { prompt_text: `What is ${brandName} and what do they do?`,                    category: 'brand awareness' },
+  { prompt_text: `Who founded ${brandName} and when was it established?`,         category: 'niche' },
+  { prompt_text: `What is the pricing for ${brandName}? How much does it cost?`,  category: 'pricing' },
+  { prompt_text: `How does ${brandName} compare to its main competitors?`,         category: 'comparison' },
+  { prompt_text: `What are the pros and cons of using ${brandName}?`,             category: 'comparison' },
+  { prompt_text: `What industries or use cases is ${brandName} best suited for?`, category: 'niche' },
+  { prompt_text: `What are customers saying about ${brandName}?`,                 category: 'general' },
+  { prompt_text: `Is ${brandName} a reliable and trustworthy company?`,           category: 'general' },
+  { prompt_text: `Would you recommend ${brandName} to a small business owner?`,   category: 'recommendation' },
+  { prompt_text: `What are the best alternatives to ${brandName}?`,               category: 'recommendation' },
+]
+
 function SentimentPill({ val }) {
   if (!val) return null
   const cls = val === 'positive' ? 'badge-positive' : val === 'negative' ? 'badge-negative' : 'badge-neutral'
@@ -19,37 +36,89 @@ function SentimentPill({ val }) {
 
 export default function Probes() {
   const { brandId } = useParams()
-  const [prompts, setPrompts]             = useState([])
-  const [runs, setRuns]                   = useState([])
+  const [prompts, setPrompts]                 = useState([])
+  const [brandName, setBrandName]             = useState('')
+  const [runs, setRuns]                       = useState([])
   const [selectedPrompts, setSelectedPrompts] = useState([])
   const [selectedEngines, setSelectedEngines] = useState(['gpt4'])
-  const [running, setRunning]             = useState(false)
-  const [expandedRun, setExpandedRun]     = useState(null)
-  const [newPrompt, setNewPrompt]         = useState({ text: '', category: 'general' })
-  const [showAddPrompt, setShowAddPrompt] = useState(false)
+  const [running, setRunning]                 = useState(false)
+  const [seeding, setSeeding]                 = useState(false)
+  const [expandedRun, setExpandedRun]         = useState(null)
+  const [newPrompt, setNewPrompt]             = useState({ text: '', category: 'general' })
+  const [showAddPrompt, setShowAddPrompt]     = useState(false)
   const pollingRef = useRef(null)
 
+  // ── Load brand name + prompts + runs ────────────────────────────────────────
   const loadData = async () => {
-    const [p, r] = await Promise.all([
-      promptsAPI.list(brandId),
-      probesAPI.list(brandId),
-    ])
-    setPrompts(p.data)
-    setRuns(r.data)
+    try {
+      const [p, r] = await Promise.all([
+        promptsAPI.list(brandId),
+        probesAPI.list(brandId),
+      ])
+      setPrompts(p.data)
+      setRuns(r.data)
+      return p.data   // return so seedDefaults can use it
+    } catch (err) {
+      console.error('Probes loadData error:', err)
+      return []
+    }
   }
 
+  // ── Fetch brand name from the visibility API ─────────────────────────────────
+  const fetchBrandName = async () => {
+    try {
+      const { data } = await api.get(`/brands/${brandId}`)
+      return data?.name || ''
+    } catch {
+      return ''
+    }
+  }
+
+  // ── Seed default prompts to DB (only when brand has none) ────────────────────
+  const seedDefaults = async (name) => {
+    if (!name) return
+    setSeeding(true)
+    try {
+      const defaults = buildDefaultPrompts(name)
+      await Promise.all(
+        defaults.map(d =>
+          promptsAPI.create(brandId, {
+            prompt_text: d.prompt_text,
+            category: d.category,
+          })
+        )
+      )
+      // Reload now that they're saved
+      await loadData()
+    } catch (err) {
+      console.error('Seed defaults error:', err)
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  // ── Initial load: brand name → prompts → seed if empty ──────────────────────
   useEffect(() => {
-    loadData()
+    const init = async () => {
+      const name = await fetchBrandName()
+      setBrandName(name)
+      const saved = await loadData()
+      // If no prompts exist yet, seed the defaults
+      if (saved.length === 0 && name) {
+        await seedDefaults(name)
+      }
+    }
+    init()
     return () => clearInterval(pollingRef.current)
   }, [brandId])
 
-  // Poll when any run is pending/running
+  // ── Poll while runs are pending/running ──────────────────────────────────────
   useEffect(() => {
     clearInterval(pollingRef.current)
     const hasPending = runs.some(r => r.status === 'pending' || r.status === 'running')
     if (hasPending) {
       pollingRef.current = setInterval(() => {
-        probesAPI.list(brandId).then(r => setRuns(r.data))
+        probesAPI.list(brandId).then(r => setRuns(r.data)).catch(() => {})
       }, 3000)
     }
     return () => clearInterval(pollingRef.current)
@@ -61,6 +130,7 @@ export default function Probes() {
   const toggleEngine = (id) =>
     setSelectedEngines(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
 
+  // ── Run — all selected prompts have real DB IDs now ──────────────────────────
   const handleRun = async () => {
     if (!selectedPrompts.length) return toast.error('Select at least one prompt')
     if (!selectedEngines.length) return toast.error('Select at least one engine')
@@ -89,22 +159,26 @@ export default function Probes() {
       setNewPrompt({ text: '', category: 'general' })
       setShowAddPrompt(false)
       toast.success('Prompt added')
-      const p = await promptsAPI.list(brandId)
-      setPrompts(p.data)
+      await loadData()
     } catch {
       toast.error('Failed to add prompt')
     }
   }
 
+  const totalRuns = selectedPrompts.length * selectedEngines.length
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-100">Probe Runner</h1>
-        <p className="text-gray-500 text-sm mt-1">Fire prompts at LLMs and analyse the responses</p>
+        <p className="text-gray-500 text-sm mt-1">
+          Fire prompts at LLMs and analyse the responses
+          {brandName && <span className="text-indigo-400 ml-1">— {brandName}</span>}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left panel: prompt selector + engine picker */}
+        {/* Left panel */}
         <div className="lg:col-span-1 space-y-5">
           {/* Engine selector */}
           <div className="card">
@@ -151,7 +225,7 @@ export default function Probes() {
                   value={newPrompt.category}
                   onChange={e => setNewPrompt(n => ({ ...n, category: e.target.value }))}
                 >
-                  {['general', 'pricing', 'comparison', 'niche'].map(c => (
+                  {['general', 'pricing', 'comparison', 'niche', 'brand awareness', 'recommendation'].map(c => (
                     <option key={c} value={c}>{c}</option>
                   ))}
                 </select>
@@ -163,6 +237,14 @@ export default function Probes() {
             )}
 
             <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
+              {seeding && (
+                <p className="text-xs text-indigo-400 text-center py-4 animate-pulse">
+                  Setting up default prompts for {brandName}…
+                </p>
+              )}
+              {!seeding && prompts.length === 0 && (
+                <p className="text-xs text-gray-600 text-center py-4">No prompts yet — click + Add above</p>
+              )}
               {prompts.map(p => (
                 <button
                   key={p.id}
@@ -181,9 +263,9 @@ export default function Probes() {
 
             {selectedPrompts.length > 0 && (
               <p className="text-xs text-gray-600 mt-2">
-                {selectedPrompts.length} prompt{selectedPrompts.length > 1 ? 's' : ''} selected
+                {selectedPrompts.length} prompt{selectedPrompts.length > 1 ? 's' : ''}
                 · {selectedEngines.length} engine{selectedEngines.length > 1 ? 's' : ''}
-                = {selectedPrompts.length * selectedEngines.length} runs
+                = {totalRuns} runs
               </p>
             )}
           </div>
@@ -191,13 +273,13 @@ export default function Probes() {
           <button
             className="btn-primary w-full py-3 text-base"
             onClick={handleRun}
-            disabled={running || !selectedPrompts.length || !selectedEngines.length}
+            disabled={running || seeding || !selectedPrompts.length || !selectedEngines.length}
           >
-            {running ? 'Starting…' : `▶ Run ${selectedPrompts.length * selectedEngines.length || ''} probes`}
+            {running ? 'Starting…' : `▶ Run ${totalRuns || ''} probes`}
           </button>
         </div>
 
-        {/* Right panel: run results */}
+        {/* Right panel: results */}
         <div className="lg:col-span-2 card">
           <h2 className="text-sm font-semibold text-gray-300 mb-4">Results</h2>
 

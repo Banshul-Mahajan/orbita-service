@@ -1,11 +1,12 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Outlet, useLocation, useNavigate, NavLink } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectsApi } from '../modules/discover/api/client';
 import { useProjectStore } from '../modules/discover/store/projectStore';
-import { FolderOpen, ChevronDown, Plus, Check, X, Loader2, Globe, RefreshCw, Activity, Zap, TrendingUp, Target } from 'lucide-react';
+import { useBrandStore, type Brand } from '../store/brandStore';
+import { FolderOpen, ChevronDown, Plus, Check, X, Loader2, Globe, RefreshCw, Activity, TrendingUp, Target, Building2, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
 // ── cookie helpers ────────────────────────────────────────────────────────────
@@ -20,46 +21,49 @@ const setCookie = (name: string, value: string) => {
 // ── Sub-nav registry ──────────────────────────────────────────────────────────
 const MODULE_SUBNAV: Record<string, { label: string; path: string }[]> = {
   discover: [
-    { label: 'Dashboard',      path: '' },
-    { label: 'Onboarding',     path: 'onboarding' },
-    { label: 'Keywords',       path: 'keywords' },
-    { label: 'Competitors',    path: 'competitors' },
-    { label: 'SERP Analyzer',  path: 'serp' },
-    { label: 'AI Scanner',     path: 'ai-scan' },
+    { label: 'Dashboard', path: '' },
+    { label: 'Onboarding', path: 'onboarding' },
+    { label: 'Keywords', path: 'keywords' },
+    { label: 'Competitors', path: 'competitors' },
+    { label: 'SERP Analyzer', path: 'serp' },
+    { label: 'AI Scanner', path: 'ai-scan' },
     { label: 'Intent Heatmap', path: 'heatmap' },
-    { label: 'Questions',      path: 'questions' },
+    { label: 'Questions', path: 'questions' },
   ],
   visibility: [{ label: 'Brands', path: 'brands' }],
   create: [
     { label: 'Dashboard', path: 'dashboard' },
-    { label: 'New Brief',  path: 'briefs/new' },
-    { label: 'Corpus',     path: 'corpus' },
+    { label: 'New Brief', path: 'briefs/new' },
+    { label: 'Corpus', path: 'corpus' },
   ],
   optimize: [],
   knowledge: [
     { label: 'Dashboard', path: '' },
-    { label: 'Entities',  path: 'entities' },
+    { label: 'Entities', path: 'entities' },
     { label: 'Citations', path: 'sources' },
-    { label: 'Authors',   path: 'authors' },
+    { label: 'Authors', path: 'authors' },
     { label: 'FactGuard', path: 'factguard' },
   ],
+  brands: [],
 };
 
 const MODULE_CLASSES: Record<string, string> = {
-  discover:   'orbit-module',
+  discover: 'orbit-module',
   visibility: 'orbit-module',
-  create:     'orbit-module',
-  optimize:   'optimize-module',
-  knowledge:  'orbit-module knowledge-module',
+  create: 'orbit-module',
+  optimize: 'optimize-module',
+  knowledge: 'orbit-module knowledge-module',
+  brands: 'orbit-module',
 };
 
 const MODULE_TITLES: Record<string, string> = {
-  discover:   'Discover Orbit',
+  discover: 'Discover Orbit',
   visibility: 'Visibility Orbit',
-  create:     'Create Orbit',
-  optimize:   'Optimize Orbit',
-  knowledge:  'Knowledge Core',
-  settings:   'Settings',
+  create: 'Create Orbit',
+  optimize: 'Optimize Orbit',
+  knowledge: 'Knowledge Core',
+  brands: 'Brand Management',
+  settings: 'Settings',
 };
 
 // ── Shared Picker UI ──────────────────────────────────────────────────────────
@@ -73,28 +77,21 @@ const pickerBtnStyle: React.CSSProperties = {
 // ── Discover: Project Picker ──────────────────────────────────────────────────
 function DiscoverProjectPicker() {
   const { selectedProject, setSelectedProject } = useProjectStore();
+  const { currentBrand } = useBrandStore();          // ← shared global brand
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({ name: '', description: '' });
   const [createError, setCreateError] = useState('');
   const qc = useQueryClient();
+  const navigate = useNavigate();
 
-  // Fetch the user's brands to get a brand_id for project scoping
-  const { data: brands = [] } = useQuery<any[]>({
-    queryKey: ['my-brands'],
-    queryFn: () => axios.get('/api/brands', {
-      headers: { Authorization: `Bearer ${getCookie('orbit_token') || localStorage.getItem('access_token')}` }
-    }).then(r => r.data),
-  });
+  // Resolve active brand id — prefer store, fall back to cookie
+  const activeBrandId = currentBrand?.id || getCookie('orbit_brand_id') || '';
 
-  // Auto-set orbit_brand_id from first available brand if not already set
+  // Ensure cookie stays in sync whenever store changes
   useEffect(() => {
-    if ((brands as any[]).length > 0 && !getCookie('orbit_brand_id')) {
-      setCookie('orbit_brand_id', (brands as any[])[0].id);
-    }
-  }, [brands]);
-
-  const activeBrandId = getCookie('orbit_brand_id') || (brands as any[])[0]?.id || '';
+    if (currentBrand?.id) setCookie('orbit_brand_id', currentBrand.id);
+  }, [currentBrand?.id]);
 
   const { data: projects = [] } = useQuery<any[]>({
     queryKey: ['projects', activeBrandId],
@@ -104,8 +101,8 @@ function DiscoverProjectPicker() {
 
   const createMut = useMutation({
     mutationFn: () => {
-      if (!activeBrandId) throw new Error('No brand found. Create a brand in Visibility Orbit first.');
-      setCookie('orbit_brand_id', activeBrandId); // ensure cookie is set
+      if (!activeBrandId) throw new Error('No brand selected. Please choose a brand first.');
+      setCookie('orbit_brand_id', activeBrandId);
       return projectsApi.create(form.name, form.description);
     },
     onSuccess: (project: any) => {
@@ -141,11 +138,24 @@ function DiscoverProjectPicker() {
           background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10,
           boxShadow: '0 8px 32px rgba(0,0,0,0.6)', overflow: 'hidden',
         }}>
-          {(brands as any[]).length === 0 && (
-            <div style={{ padding: '10px 14px', color: '#f59e0b', fontSize: 12, borderBottom: '1px solid #1e293b' }}>
-              No brand found — create one in Visibility Orbit first.
+          {/* Active brand context indicator */}
+          {currentBrand ? (
+            <div style={{ padding: '7px 14px', fontSize: 11, color: '#6366f1', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Building2 size={11} />
+              <span style={{ fontWeight: 600 }}>{currentBrand.name}</span>
+            </div>
+          ) : (
+            <div style={{ padding: '10px 14px', color: '#f59e0b', fontSize: 12, borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: 6 }}>
+              ⚠ No brand selected —{' '}
+              <button
+                onClick={() => { setOpen(false); navigate('/dashboard/brands'); }}
+                style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer', fontSize: 12, padding: 0, textDecoration: 'underline' }}
+              >
+                create one here
+              </button>
             </div>
           )}
+
           <div style={{ maxHeight: 220, overflowY: 'auto' }}>
             {(projects as any[]).length === 0 && !creating && (
               <div style={{ padding: '0.75rem 1rem', color: '#6b7280', fontSize: 12, textAlign: 'center' }}>
@@ -160,6 +170,7 @@ function DiscoverProjectPicker() {
               </button>
             ))}
           </div>
+
           {creating ? (
             <div style={{ padding: '10px 14px', borderTop: '1px solid #1e293b' }}>
               <input autoFocus value={form.name} onChange={e => setForm({ ...form, name: e.target.value })}
@@ -188,7 +199,8 @@ function DiscoverProjectPicker() {
             </div>
           ) : (
             <button onClick={() => { setCreating(true); setCreateError(''); }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderTop: '1px solid #1e293b', cursor: 'pointer', color: '#6366f1', fontSize: 13 }}>
+              disabled={!activeBrandId}
+              style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', padding: '9px 14px', background: 'none', border: 'none', borderTop: '1px solid #1e293b', cursor: activeBrandId ? 'pointer' : 'not-allowed', color: activeBrandId ? '#6366f1' : '#475569', fontSize: 13 }}>
               <Plus size={13} /> New project
             </button>
           )}
@@ -198,85 +210,203 @@ function DiscoverProjectPicker() {
   );
 }
 
-// ── Create: Brand Picker ──────────────────────────────────────────────────────
-function CreateBrandPicker() {
+
+// ── Unified Brand + Project Switcher (top-right dropdown) ────────────────────
+function BrandSwitcher() {
   const [open, setOpen] = useState(false);
-  const [selectedBrand, setSelectedBrand] = useState<any>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  const { currentBrand, setCurrentBrand, setBrands } = useBrandStore();
+  const { selectedProject, setSelectedProject } = useProjectStore();
   const qc = useQueryClient();
+  const token = localStorage.getItem('access_token') || '';
+  const auth = { Authorization: `Bearer ${token}` };
 
-  // Read existing brand from cookie on mount
-  useEffect(() => {
-    const existing = getCookie('orbit_brand_id');
-    if (existing && !selectedBrand) {
-      // Try to resolve the brand name from visibility brands
-      qc.fetchQuery({
-        queryKey: ['brands-for-picker'],
-        queryFn: () => axios.get('/api/visibility/brands', {
-          headers: { Authorization: `Bearer ${getCookie('orbit_token') || localStorage.getItem('access_token')}` }
-        }).then(r => r.data),
-      }).then((brands: any) => {
-        const found = (brands || []).find((b: any) => b.id === existing);
-        if (found) setSelectedBrand(found);
-      }).catch(() => {});
-    }
-  }, []);
+  // Load all brands
+  const { data: brands = [] } = useQuery<Brand[]>({
+    queryKey: ['brands'],
+    queryFn: () => axios.get('/api/brands', { headers: auth }).then(r => r.data),
+    onSuccess: (data: Brand[]) => {
+      setBrands(data);
+      if (!currentBrand && data.length > 0) setCurrentBrand(data[0]);
+    },
+  } as any);
 
-  const { data: brands = [] } = useQuery<any[]>({
-    queryKey: ['brands-for-picker'],
-    queryFn: () => axios.get('/api/visibility/brands', {
-      headers: { Authorization: `Bearer ${getCookie('orbit_token') || localStorage.getItem('access_token')}` }
-    }).then(r => r.data),
+  // Load projects for current brand
+  const { data: projects = [] } = useQuery<any[]>({
+    queryKey: ['projects', currentBrand?.id],
+    queryFn: () => projectsApi.list(),
+    enabled: !!currentBrand?.id,
   });
 
-  const selectBrand = (brand: any) => {
-    setSelectedBrand(brand);
-    setCookie('orbit_brand_id', brand.id);
-    setOpen(false);
-    qc.invalidateQueries(); // refresh all queries that depend on brand context
-  };
+  // Delete a project
+  const deleteProjectMut = useMutation({
+    mutationFn: (id: string) => projectsApi.delete(id),
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['projects', currentBrand?.id] });
+      if (selectedProject?.id === id) setSelectedProject(null);
+    },
+  });
+
+  // Close on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const goToBrands = (qs = '') => { setOpen(false); navigate(`/dashboard/brands${qs}`); };
+
+  const label = currentBrand
+    ? `${currentBrand.name}${selectedProject ? ` / ${selectedProject.name}` : ''}`
+    : 'Switch Brand';
 
   return (
-    <div style={{ position: 'relative' }}>
-      <button onClick={() => setOpen(o => !o)} style={{
-        ...pickerBtnStyle,
-        background: selectedBrand ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-        borderColor: selectedBrand ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)',
-      }}>
-        <Globe size={14} color={selectedBrand ? '#10b981' : '#ef4444'} />
-        <span style={{ maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {selectedBrand ? selectedBrand.name : 'Select brand'}
-        </span>
+    <div ref={dropRef} style={{ position: 'relative', zIndex: 500 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: currentBrand ? 'rgba(99,102,241,0.12)' : 'rgba(239,68,68,0.08)',
+          border: `1px solid ${currentBrand ? 'rgba(99,102,241,0.3)' : 'rgba(239,68,68,0.3)'}`,
+          borderRadius: 8, padding: '5px 12px', cursor: 'pointer',
+          color: '#cbd5e1', fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
+        }}
+      >
+        <Building2 size={14} color={currentBrand ? '#818cf8' : '#f87171'} />
+        <span style={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
         <ChevronDown size={12} color="#9ca3af" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s', flexShrink: 0 }} />
       </button>
 
       {open && (
         <div style={{
-          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 200, minWidth: 230,
-          background: '#0f172a', border: '1px solid #1f2937', borderRadius: 10,
-          boxShadow: '0 8px 24px rgba(0,0,0,0.4)', overflow: 'hidden',
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0, zIndex: 499,
+          minWidth: 270, background: '#0f172a', border: '1px solid #1f2937',
+          borderRadius: 12, boxShadow: '0 12px 40px rgba(0,0,0,0.7)', overflow: 'hidden',
         }}>
-          <div style={{ padding: '8px 14px 6px', fontSize: 11, color: '#475569', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            Select Brand Context
+          {/* Header */}
+          <div style={{ padding: '8px 14px 4px', fontSize: 10, color: '#475569', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Brands &amp; Projects
           </div>
-          <div style={{ maxHeight: 240, overflowY: 'auto' }}>
-            {(brands as any[]).length === 0 && (
-              <div style={{ padding: '12px 14px', color: '#6b7280', fontSize: 12, textAlign: 'center' }}>
-                No brands yet — create one in Visibility Orbit
+
+          <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+            {(brands as Brand[]).length === 0 && (
+              <div style={{ padding: '12px 14px', fontSize: 12, color: '#6b7280', textAlign: 'center' }}>
+                No brands yet — click <strong style={{ color: '#818cf8' }}>+ New Brand</strong> below
               </div>
             )}
-            {(brands as any[]).map((b: any) => (
-              <button key={b.id} onClick={() => selectBrand(b)}
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '10px 14px', background: 'none', border: 'none', cursor: 'pointer', color: '#e2e8f0', fontSize: 13, textAlign: 'left', borderBottom: '1px solid #1e293b' }}>
-                <div>
-                  <div style={{ fontWeight: 500 }}>{b.name}</div>
-                  {b.description && <div style={{ fontSize: 11, color: '#475569', marginTop: 1 }}>{b.description.slice(0, 40)}</div>}
-                </div>
-                {selectedBrand?.id === b.id && <Check size={13} color="#10b981" />}
-              </button>
+
+            {(brands as Brand[]).map((b) => (
+              <div key={b.id}>
+                {/* Brand row */}
+                <button
+                  onClick={() => { setCurrentBrand(b); setSelectedProject(null); }}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    width: '100%', padding: '9px 14px',
+                    background: currentBrand?.id === b.id ? 'rgba(99,102,241,0.12)' : 'none',
+                    border: 'none', borderBottom: '1px solid #1e293b',
+                    cursor: 'pointer', textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: 6, flexShrink: 0,
+                      background: 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 700, color: '#fff',
+                    }}>
+                      {b.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: currentBrand?.id === b.id ? '#a5b4fc' : '#e2e8f0' }}>
+                      {b.name}
+                    </span>
+                  </div>
+                  {currentBrand?.id === b.id && !selectedProject && <Check size={12} color="#818cf8" />}
+                </button>
+
+                {/* Projects nested under active brand */}
+                {currentBrand?.id === b.id && (projects as any[]).map((p: any) => (
+                  <div
+                    key={p.id}
+                    style={{
+                      display: 'flex', alignItems: 'center',
+                      background: selectedProject?.id === p.id ? 'rgba(16,185,129,0.08)' : 'none',
+                      borderBottom: '1px solid #161f2e',
+                    }}
+                  >
+                    {/* Select */}
+                    <button
+                      onClick={() => { setCurrentBrand(b); setSelectedProject(p); setOpen(false); }}
+                      style={{
+                        flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '7px 8px 7px 44px', background: 'none', border: 'none',
+                        cursor: 'pointer', textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <FolderOpen size={11} color="#10b981" />
+                        <span style={{ fontSize: 12, color: selectedProject?.id === p.id ? '#34d399' : '#94a3b8' }}>{p.name}</span>
+                      </div>
+                      {selectedProject?.id === p.id && <Check size={11} color="#10b981" />}
+                    </button>
+
+                    {/* Delete project */}
+                    <button
+                      title={`Delete "${p.name}"`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete project "${p.name}"? This cannot be undone.`)) {
+                          deleteProjectMut.mutate(p.id);
+                        }
+                      }}
+                      style={{
+                        flexShrink: 0, padding: '7px 10px', background: 'none', border: 'none',
+                        cursor: 'pointer', color: '#6b7280', display: 'flex', alignItems: 'center',
+                        transition: 'color 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.color = '#f87171')}
+                      onMouseLeave={e => (e.currentTarget.style.color = '#6b7280')}
+                    >
+                      {deleteProjectMut.isPending
+                        ? <Loader2 size={11} style={{ animation: 'spin 1s linear infinite' }} />
+                        : <Trash2 size={11} />}
+                    </button>
+                  </div>
+                ))}
+              </div>
             ))}
+          </div>
+
+          {/* Footer — New Brand navigates to full form, no inline create */}
+          <div style={{ borderTop: '1px solid #1e293b' }}>
+            <button
+              onClick={() => goToBrands('?new=1')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7, width: '100%',
+                padding: '10px 14px', background: 'none', border: 'none',
+                cursor: 'pointer', color: '#818cf8', fontSize: 13, fontWeight: 600,
+              }}
+            >
+              <Plus size={13} /> New Brand
+            </button>
+            <button
+              onClick={() => goToBrands()}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 7, width: '100%',
+                padding: '9px 14px', background: 'none', border: 'none',
+                borderTop: '1px solid #1e293b', cursor: 'pointer', color: '#64748b', fontSize: 12,
+              }}
+            >
+              <Building2 size={12} /> Manage Brands…
+            </button>
           </div>
         </div>
       )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }
@@ -289,11 +419,11 @@ function VisibilitySubNav({ basePath }: { basePath: string }) {
   const inBrand = segments[2] === 'brands' && !!brandId;
 
   const tabs = inBrand ? [
-    { label: 'Overview',       path: `brands/${brandId}` },
-    { label: 'Probes',         path: `brands/${brandId}/probes` },
-    { label: 'Alerts',         path: `brands/${brandId}/alerts` },
-    { label: 'Facts',          path: `brands/${brandId}/knowledge` },
-    { label: '← All Brands',  path: 'brands' },
+    { label: 'Overview', path: `brands/${brandId}` },
+    { label: 'Probes', path: `brands/${brandId}/probes` },
+    { label: 'Alerts', path: `brands/${brandId}/alerts` },
+    { label: 'Facts', path: `brands/${brandId}/knowledge` },
+    { label: '← All Brands', path: 'brands' },
   ] : [
     { label: 'Brands', path: 'brands' },
   ];
@@ -345,27 +475,46 @@ function MissionControlHome() {
       log(`Found ${brands.length} brand(s)`);
 
       log('Fetching projects…');
-      let totalProjects = 0;
+      let allProjects: any[] = [];
       for (const b of brands.slice(0, 5)) {
-        const pRes = await axios.get(`/api/brands/${b.id}/projects`, { headers: authHeader }).catch(() => ({ data: [] }));
-        totalProjects += (pRes.data || []).length;
+        const pRes = await axios.get(`/api/brands/${b.id}/projects`, { 
+          headers: { ...authHeader, 'X-Orbita-Brand-Id': b.id } 
+        }).catch(() => ({ data: [] }));
+        const projs = pRes.data || [];
+        // Attach brand id so we can use it below
+        allProjects = allProjects.concat(projs.map((p: any) => ({ ...p, brand_id: b.id })));
       }
-      log(`Found ${totalProjects} project(s)`);
+      log(`Found ${allProjects.length} project(s)`);
 
       log('Fetching visibility probes…');
       let totalProbes = 0;
       for (const b of brands.slice(0, 3)) {
-        const prRes = await axios.get(`/api/visibility/brands/${b.id}/probes`, { headers: authHeader }).catch(() => ({ data: [] }));
+        const prRes = await axios.get(`/api/visibility/brands/${b.id}/probes`, { 
+          headers: { ...authHeader, 'X-Orbita-Brand-Id': b.id } 
+        }).catch(() => ({ data: [] }));
         totalProbes += (prRes.data || []).length;
       }
       log(`Found ${totalProbes} probe(s)`);
 
       log('Fetching keyword count…');
-      const kwRes = await axios.get('/api/discover/v1/keywords/', { headers: authHeader }).catch(() => ({ data: [] }));
-      const kwCount = Array.isArray(kwRes.data) ? kwRes.data.length : (kwRes.data?.total_keywords ?? 0);
+      let kwCount = 0;
+      // Loop through up to 5 projects to avoid spamming the backend during a quick scan
+      for (const p of allProjects.slice(0, 5)) {
+        const kwRes = await axios.get(`/api/discover/keywords/${p.id}`, { 
+          headers: { 
+            ...authHeader, 
+            'X-Orbita-Brand-Id': p.brand_id,
+            'X-Orbita-Project-Id': p.id
+          } 
+        }).catch((err) => {
+          console.error(`Keyword fetch failed for project ${p.id}:`, err);
+          return { data: { total_keywords: 0 } };
+        });
+        kwCount += (kwRes.data?.total_keywords ?? 0);
+      }
       log(`Found ${kwCount} keyword(s)`);
 
-      setStats({ brands: brands.length, projects: totalProjects, probes: totalProbes, keywords: kwCount });
+      setStats({ brands: brands.length, projects: allProjects.length, probes: totalProbes, keywords: kwCount });
       setLastScanned(new Date().toLocaleTimeString());
       log('✓ Scan complete');
       qc.invalidateQueries();
@@ -535,11 +684,11 @@ const DashboardPage: React.FC = () => {
           <h2 style={{ fontSize: 17, fontWeight: 600, color: '#f1f5f9', margin: 0, letterSpacing: '0.01em' }}>{pageTitle}</h2>
 
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {/* Discover: Project picker lives in topbar */}
+            {/* Discover: Project picker stays alongside brand switcher */}
             {activeModule === 'discover' && <DiscoverProjectPicker />}
 
-            {/* Create: Brand picker lives in topbar */}
-            {activeModule === 'create' && <CreateBrandPicker />}
+            {/* Unified brand + project switcher — always visible */}
+            <BrandSwitcher />
 
             {orgName && (
               <span style={{ fontSize: 13, color: '#94a3b8', borderLeft: '1px solid rgba(255,255,255,0.1)', paddingLeft: 12 }}>

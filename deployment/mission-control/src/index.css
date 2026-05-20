@@ -198,7 +198,7 @@ p {
   padding: 10px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 700;
   font-size: 14px;
   transition: all 0.2s;
 }
@@ -207,15 +207,18 @@ p {
   background: white;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   color: #111827;
+  font-weight: 800;
 }
 
 .auth-tab:not(.active) {
-  color: #71717a;
+  color: #27272a;
 }
 
 .auth-form-header h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
+  color: #111827;
+  font-weight: 800;
 }
 
 .auth-form-header p {
@@ -341,6 +344,38 @@ p {
 
 .btn-social:hover {
   background: #f4f4f5;
+}
+
+.microsoft-logo {
+  display: grid;
+  grid-template-columns: repeat(2, 8px);
+  grid-template-rows: repeat(2, 8px);
+  gap: 2px;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+
+.microsoft-logo-tile {
+  display: block;
+  width: 8px;
+  height: 8px;
+}
+
+.microsoft-logo-red {
+  background: #f25022;
+}
+
+.microsoft-logo-green {
+  background: #7fba00;
+}
+
+.microsoft-logo-blue {
+  background: #00a4ef;
+}
+
+.microsoft-logo-yellow {
+  background: #ffb900;
 }
 
 .auth-footer {
