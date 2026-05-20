@@ -260,7 +260,7 @@ function BrandSwitcher() {
 
   const goToBrands = (qs = '') => { setOpen(false); navigate(`/dashboard/brands${qs}`); };
 
-  const label = currentBrand
+  const label = currentBrand?.name
     ? `${currentBrand.name}${selectedProject ? ` / ${selectedProject.name}` : ''}`
     : 'Switch Brand';
 
