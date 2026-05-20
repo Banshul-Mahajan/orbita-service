@@ -33,6 +33,7 @@ def _get_org_id(user: User, db: Session) -> str:
 
 
 @router.post("", response_model=BrandOut, status_code=201)
+@router.post("/", response_model=BrandOut, status_code=201)
 def create_brand(
     payload: BrandCreate,
     current_user: User = Depends(get_current_user),
@@ -70,6 +71,7 @@ def create_brand(
 
 
 @router.get("", response_model=List[BrandOut])
+@router.get("/", response_model=List[BrandOut])
 def list_brands(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
