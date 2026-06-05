@@ -15,14 +15,52 @@ from app.core.platform import (
 from app.database import get_db
 from app.models import (
     KeywordOpportunity,
+    OnboardingProfile,
     WebsitePage,
     WebsiteScanRun,
 )
-from app.schemas import APIResponse, OnboardingStartRequest, WebsiteScanRequest
+from app.schemas import (
+    APIResponse,
+    OnboardingProfileSave,
+    OnboardingStartRequest,
+    WebsiteScanRequest,
+)
 from app.services.keyword_opportunity_service import build_keyword_opportunities
 from app.services.website_scan_service import extract_domain, scan_website
 
 router = APIRouter(prefix="/onboarding", tags=["Onboarding"])
+
+
+def _merge_seed_topics(
+    user_seeds: list[str] | None,
+    auto_topics: list[str],
+    max_seeds: int = 6,
+) -> list[dict]:
+    """Merge user-provided seed keywords with auto-extracted topics.
+
+    User seeds are prioritised; auto-extracted topics fill remaining slots.
+    Duplicates (by normalised lowercase form) are removed.
+    """
+    merged: list[dict] = []
+    seen: set[str] = set()
+
+    # User seeds come first
+    for kw in (user_seeds or []):
+        norm = kw.strip().lower()
+        if norm and norm not in seen:
+            seen.add(norm)
+            merged.append({"topic": kw.strip(), "source": "user_seed"})
+
+    # Auto-extracted topics fill the rest
+    for topic in auto_topics:
+        if len(merged) >= max_seeds:
+            break
+        norm = topic.strip().lower()
+        if norm and norm not in seen:
+            seen.add(norm)
+            merged.append({"topic": topic.strip(), "source": "website_scan"})
+
+    return merged[:max_seeds]
 
 
 async def _persist_scan_and_keywords(
@@ -33,8 +71,13 @@ async def _persist_scan_and_keywords(
     industry: str | None,
     target_audience: str | None,
     limit_per_seed: int,
+    seed_keywords: list[str] | None = None,
 ) -> dict:
     scan = await scan_website(website_url)
+
+    # Merge user-provided seed keywords with auto-extracted topics
+    combined_seeds_raw = _merge_seed_topics(seed_keywords, scan["seed_topics"])
+    combined_seeds = [s["topic"] for s in combined_seeds_raw]
 
     scan_run = WebsiteScanRun(
         organization_id=context.organization_id,
@@ -44,7 +87,7 @@ async def _persist_scan_and_keywords(
         status="completed",
         pages_discovered=len(scan["pages"]),
         pages_scanned=len(scan["pages"]),
-        seed_topics=scan["seed_topics"],
+        seed_topics=combined_seeds,
         errors=scan["errors"],
         completed_at=datetime.now(timezone.utc),
     )
@@ -70,11 +113,12 @@ async def _persist_scan_and_keywords(
         ))
 
     opportunities = await build_keyword_opportunities(
-        seed_topics=scan["seed_topics"],
+        seed_topics=combined_seeds_raw,
         company_name=company_name,
         industry=industry,
         target_audience=target_audience,
         limit_per_seed=limit_per_seed,
+        seed_keywords=seed_keywords,
     )
 
     source_page_url = scan["pages"][0]["url"] if scan["pages"] else scan["normalized_url"]
@@ -95,6 +139,7 @@ async def _persist_scan_and_keywords(
             relevance_score=item["relevance_score"],
             cluster_name=item["cluster_name"],
             selected=item["selected"],
+            selection_notes=item["source_type"],
         ))
 
     await db.flush()
@@ -127,6 +172,7 @@ async def start_onboarding(
         industry=body.industry,
         target_audience=body.target_audience,
         limit_per_seed=body.limit_per_seed,
+        seed_keywords=body.seed_keywords,
     )
 
     brand = await update_brand_profile(
@@ -277,6 +323,106 @@ async def get_onboarding(
             {"intent": item.intent, "selected": item.selected} for item in opportunities
         ]),
     })
+
+
+_PROFILE_SECTIONS = (
+    "company", "audience", "products", "competitors", "geography",
+    "keywords", "ai_geo", "digital_presence", "technical_seo",
+)
+
+
+def _serialize_profile(profile: OnboardingProfile | None, project_id: str) -> dict:
+    if profile is None:
+        return {
+            "project_id": project_id,
+            **{section: None for section in _PROFILE_SECTIONS},
+            "completed_steps": [],
+            "status": "in_progress",
+        }
+    return {
+        "project_id": profile.project_id,
+        "company": profile.company,
+        "audience": profile.audience,
+        "products": profile.products,
+        "competitors": profile.competitors,
+        "geography": profile.geography,
+        "keywords": profile.keywords,
+        "ai_geo": profile.ai_geo,
+        "digital_presence": profile.digital_presence,
+        "technical_seo": profile.technical_seo,
+        "completed_steps": profile.completed_steps or [],
+        "status": profile.status,
+    }
+
+
+@router.get("/{project_id}/profile", response_model=APIResponse)
+async def get_onboarding_profile(
+    project_id: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    context = await get_project_context(request, project_id, current_user)
+    profile = await db.scalar(
+        select(OnboardingProfile).where(*project_scope_filters(OnboardingProfile, context))
+    )
+    return APIResponse(data=_serialize_profile(profile, project_id))
+
+
+@router.put("/{project_id}/profile", response_model=APIResponse)
+async def save_onboarding_profile(
+    project_id: str,
+    body: OnboardingProfileSave,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Upsert the onboarding profile for a project.
+
+    Provided sections replace the stored value; omitted sections are left
+    untouched. Core identity fields found in the company/audience/geography
+    sections are mirrored to the Auth Service (core.brands / core.projects).
+    """
+    context = await get_project_context(request, project_id, current_user)
+    profile = await db.scalar(
+        select(OnboardingProfile).where(*project_scope_filters(OnboardingProfile, context))
+    )
+    if profile is None:
+        profile = OnboardingProfile(
+            organization_id=context.organization_id,
+            brand_id=context.brand_id,
+            project_id=context.project_id,
+        )
+        db.add(profile)
+
+    updates = body.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        setattr(profile, field, value)
+
+    await db.flush()
+
+    # Mirror identity fields to the Auth Service so the rest of the platform
+    # (brand switcher, scans, other orbits) sees consistent data.
+    company = body.company or {}
+    geography = body.geography or {}
+    audience = body.audience or {}
+
+    brand_country = company.get("country") or geography.get("primary_market")
+    await update_brand_profile(
+        request,
+        context.brand_id,
+        name=company.get("company_name"),
+        industry=company.get("industry"),
+        website_url=company.get("website_url"),
+        country=brand_country,
+    )
+    await update_project_profile(
+        request,
+        context.project_id,
+        target_audience=audience.get("summary") or audience.get("primary_audience_type"),
+    )
+
+    return APIResponse(data=_serialize_profile(profile, project_id))
 
 
 def _keyword_summary(opportunities: list[dict]) -> dict:

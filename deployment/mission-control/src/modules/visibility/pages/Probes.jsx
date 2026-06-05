@@ -1,8 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { promptsAPI, probesAPI } from '../api/client'
+import { promptsAPI, probesAPI, getCookie } from '../api/client'
 import api from '../api/client'
 import toast from 'react-hot-toast'
+
+// Canonical category labels (must match the backend prompt_generator taxonomy).
+const CAT_LABELS = {
+  branded: 'Branded',
+  category: 'Category',
+  comparison: 'Comparison',
+  pricing: 'Pricing',
+  recommendation: 'Recommendation',
+  niche: 'Niche',
+  general: 'General',
+  'brand awareness': 'Brand Awareness',
+}
+const catLabel = (c) => CAT_LABELS[c] || (c ? c[0].toUpperCase() + c.slice(1) : 'Other')
 
 const ENGINES = [
   { id: 'claude',  label: 'Claude',  color: 'border-purple-600 bg-purple-950/40 text-purple-300' },
@@ -44,8 +57,9 @@ export default function Probes() {
   const [running, setRunning]                 = useState(false)
   const [seeding, setSeeding]                 = useState(false)
   const [expandedRun, setExpandedRun]         = useState(null)
-  const [newPrompt, setNewPrompt]             = useState({ text: '', category: 'general' })
+  const [newPrompt, setNewPrompt]             = useState({ text: '', category: 'category' })
   const [showAddPrompt, setShowAddPrompt]     = useState(false)
+  const [activeCat, setActiveCat]             = useState('all')
   const pollingRef = useRef(null)
 
   // ── Load brand name + prompts + runs ────────────────────────────────────────
@@ -74,24 +88,48 @@ export default function Probes() {
     }
   }
 
-  // ── Seed default prompts to DB (only when brand has none) ────────────────────
+  // ── Generate prompts via the backend (branded + unbranded category +
+  //    seed-keyword prompts pulled from the active project's onboarding) ────────
+  const runGenerate = async () => {
+    const projectId = getCookie('orbit_project_id')
+    const { data } = await promptsAPI.generate(brandId, projectId ? { project_id: projectId } : {})
+    setPrompts(data)
+    return data
+  }
+
+  // Auto-seed when a brand has no prompts yet. Falls back to client-side seeding
+  // (brand-name only) if the backend generator is unreachable.
   const seedDefaults = async (name) => {
-    if (!name) return
     setSeeding(true)
     try {
-      const defaults = buildDefaultPrompts(name)
-      await Promise.all(
-        defaults.map(d =>
-          promptsAPI.create(brandId, {
-            prompt_text: d.prompt_text,
-            category: d.category,
-          })
-        )
-      )
-      // Reload now that they're saved
-      await loadData()
+      await runGenerate()
     } catch (err) {
-      console.error('Seed defaults error:', err)
+      console.error('Generate prompts error, falling back to client seed:', err)
+      if (name) {
+        try {
+          await Promise.all(
+            buildDefaultPrompts(name).map(d =>
+              promptsAPI.create(brandId, { prompt_text: d.prompt_text, category: d.category })
+            )
+          )
+          await loadData()
+        } catch (e2) {
+          console.error('Fallback seed error:', e2)
+        }
+      }
+    } finally {
+      setSeeding(false)
+    }
+  }
+
+  // Manual "Generate" button — add any missing prompts and surface a toast.
+  const handleGenerate = async () => {
+    setSeeding(true)
+    try {
+      const data = await runGenerate()
+      toast.success(`${data.length} prompts available`)
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to generate prompts')
     } finally {
       setSeeding(false)
     }
@@ -167,6 +205,18 @@ export default function Probes() {
 
   const totalRuns = selectedPrompts.length * selectedEngines.length
 
+  // ── Category tabs + filtering ────────────────────────────────────────────────
+  const categories = ['all', ...Array.from(new Set(prompts.map(p => p.category).filter(Boolean)))]
+  const visiblePrompts = activeCat === 'all' ? prompts : prompts.filter(p => p.category === activeCat)
+  const visibleIds = visiblePrompts.map(p => p.id)
+  const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedPrompts.includes(id))
+  const toggleSelectAllVisible = () =>
+    setSelectedPrompts(s =>
+      allVisibleSelected
+        ? s.filter(id => !visibleIds.includes(id))
+        : Array.from(new Set([...s, ...visibleIds]))
+    )
+
   return (
     <div className="p-8 max-w-6xl mx-auto">
       <div className="mb-6">
@@ -205,9 +255,14 @@ export default function Probes() {
           <div className="card">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-gray-300">Select prompts</h2>
-              <button className="text-xs text-indigo-400" onClick={() => setShowAddPrompt(s => !s)}>
-                + Add
-              </button>
+              <div className="flex items-center gap-3">
+                <button className="text-xs text-indigo-400 hover:text-indigo-300 disabled:opacity-50" onClick={handleGenerate} disabled={seeding}>
+                  ✨ Generate
+                </button>
+                <button className="text-xs text-indigo-400 hover:text-indigo-300" onClick={() => setShowAddPrompt(s => !s)}>
+                  + Add
+                </button>
+              </div>
             </div>
 
             {showAddPrompt && (
@@ -225,8 +280,8 @@ export default function Probes() {
                   value={newPrompt.category}
                   onChange={e => setNewPrompt(n => ({ ...n, category: e.target.value }))}
                 >
-                  {['general', 'pricing', 'comparison', 'niche', 'brand awareness', 'recommendation'].map(c => (
-                    <option key={c} value={c}>{c}</option>
+                  {['branded', 'category', 'comparison', 'pricing', 'recommendation', 'niche', 'general'].map(c => (
+                    <option key={c} value={c}>{catLabel(c)}</option>
                   ))}
                 </select>
                 <div className="flex gap-2">
@@ -236,16 +291,50 @@ export default function Probes() {
               </form>
             )}
 
+            {/* Category tabs */}
+            {prompts.length > 0 && (
+              <>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {categories.map(c => {
+                    const count = c === 'all' ? prompts.length : prompts.filter(p => p.category === c).length
+                    return (
+                      <button
+                        key={c}
+                        onClick={() => setActiveCat(c)}
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-medium border transition-colors ${
+                          activeCat === c
+                            ? 'bg-indigo-600/30 border-indigo-500 text-indigo-100'
+                            : 'bg-gray-800/60 border-gray-700 text-gray-400 hover:border-gray-600'
+                        }`}
+                      >
+                        {c === 'all' ? 'All' : catLabel(c)}
+                        <span className="ml-1 text-gray-500">{count}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <button onClick={toggleSelectAllVisible} className="text-[11px] text-gray-400 hover:text-gray-200">
+                    {allVisibleSelected ? 'Clear selection' : `Select all${activeCat !== 'all' ? ` · ${catLabel(activeCat)}` : ''}`}
+                  </button>
+                  <span className="text-[11px] text-gray-600">{visiblePrompts.length} shown</span>
+                </div>
+              </>
+            )}
+
             <div className="space-y-1 max-h-80 overflow-y-auto pr-1">
               {seeding && (
                 <p className="text-xs text-indigo-400 text-center py-4 animate-pulse">
-                  Setting up default prompts for {brandName}…
+                  Generating prompts{brandName ? ` for ${brandName}` : ''}…
                 </p>
               )}
               {!seeding && prompts.length === 0 && (
-                <p className="text-xs text-gray-600 text-center py-4">No prompts yet — click + Add above</p>
+                <p className="text-xs text-gray-600 text-center py-4">No prompts yet — click ✨ Generate or + Add</p>
               )}
-              {prompts.map(p => (
+              {!seeding && prompts.length > 0 && visiblePrompts.length === 0 && (
+                <p className="text-xs text-gray-600 text-center py-4">No prompts in this category.</p>
+              )}
+              {visiblePrompts.map(p => (
                 <button
                   key={p.id}
                   onClick={() => togglePrompt(p.id)}
@@ -255,7 +344,7 @@ export default function Probes() {
                       : 'hover:bg-gray-800 text-gray-400 border border-transparent'
                   }`}
                 >
-                  <span className="text-gray-600 text-[10px] block mb-0.5">{p.category}</span>
+                  <span className="text-gray-600 text-[10px] block mb-0.5">{catLabel(p.category)}</span>
                   {p.prompt_text}
                 </button>
               ))}

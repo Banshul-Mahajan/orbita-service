@@ -34,6 +34,11 @@ class OnboardingStartRequest(BaseModel):
     industry: Optional[str] = Field(default=None, max_length=255)
     target_audience: Optional[str] = None
     country: Optional[str] = Field(default=None, max_length=100)
+    seed_keywords: Optional[List[str]] = Field(
+        default=None,
+        description="User-provided seed keywords for targeted keyword generation (e.g. 'creative agency in mumbai')",
+        max_length=10,
+    )
     limit_per_seed: int = Field(default=12, ge=4, le=30)
 
 
@@ -41,6 +46,38 @@ class WebsiteScanRequest(BaseModel):
     project_id: str
     website_url: str = Field(..., min_length=3, max_length=1000)
     limit_per_seed: int = Field(default=12, ge=4, le=30)
+
+
+# ── Onboarding profile (full information architecture) ────────────────────────
+class OnboardingProfileSave(BaseModel):
+    """Partial upsert of the onboarding profile. Any omitted section is left
+    untouched; any provided section replaces the stored value."""
+    company: Optional[dict] = None
+    audience: Optional[dict] = None
+    products: Optional[List[dict]] = None
+    competitors: Optional[List[dict]] = None
+    geography: Optional[dict] = None
+    keywords: Optional[dict] = None
+    ai_geo: Optional[dict] = None
+    digital_presence: Optional[dict] = None
+    technical_seo: Optional[dict] = None
+    completed_steps: Optional[List[str]] = None
+    status: Optional[str] = Field(default=None, max_length=50)
+
+
+class OnboardingProfileOut(BaseModel):
+    project_id: str
+    company: Optional[dict] = None
+    audience: Optional[dict] = None
+    products: Optional[List[dict]] = None
+    competitors: Optional[List[dict]] = None
+    geography: Optional[dict] = None
+    keywords: Optional[dict] = None
+    ai_geo: Optional[dict] = None
+    digital_presence: Optional[dict] = None
+    technical_seo: Optional[dict] = None
+    completed_steps: Optional[List[str]] = None
+    status: str = "in_progress"
 
 
 class CompanyProfileOut(BaseModel):
@@ -130,6 +167,7 @@ class KeywordOpportunityOut(BaseModel):
     cluster_name: Optional[str]
     selected: bool
     source_page_url: Optional[str]
+    source_type: Optional[str] = None
 
     class Config:
         from_attributes = True

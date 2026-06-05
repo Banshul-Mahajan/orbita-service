@@ -119,6 +119,26 @@ def knowledge_core_json(
     )
 
 
+def discover_service_json(
+    request: Request,
+    path: str,
+    *,
+    method: str = "GET",
+    json: Optional[dict[str, Any]] = None,
+    params: Optional[dict[str, Any]] = None,
+    not_found_detail: str = "Resource not found",
+) -> Any:
+    return _service_json(
+        base_url=settings.DISCOVER_SERVICE_URL,
+        path=path,
+        token=get_request_token(request),
+        method=method,
+        json=json,
+        params=params,
+        not_found_detail=not_found_detail,
+    )
+
+
 def get_brand_or_404(request: Request, current_user: CurrentUser, brand_id: str) -> dict[str, Any]:
     brand = auth_service_json(
         request,

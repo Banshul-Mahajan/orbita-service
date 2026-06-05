@@ -89,6 +89,7 @@ export interface OnboardingStartInput {
   industry?: string
   target_audience?: string
   country?: string
+  seed_keywords?: string[]
   limit_per_seed?: number
 }
 
@@ -171,6 +172,7 @@ export interface KeywordOpportunity {
   cluster_name?: string
   selected: boolean
   source_page_url?: string
+  source_type?: string
 }
 
 export interface KeywordOpportunityResult {

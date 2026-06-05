@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { keywordsApi, type KeywordCluster, type KeywordOpportunity } from '../api/client'
 import { useProjectStore } from '../store/projectStore'
-import { ArrowRight, KeySquare, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { ArrowRight, KeySquare, ChevronDown, ChevronRight, Loader2, Sparkles, Globe } from 'lucide-react'
 import clsx from 'clsx'
 
 const INTENT_CLASS: Record<string, string> = {
@@ -111,12 +111,114 @@ function OpportunityRow({
             <span className="text-sm font-medium text-gray-100">{item.keyword}</span>
             <IntentBadge intent={item.intent} />
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Relevance {(Math.round((item.relevance_score ?? 0) * 100))}% · Seed: {item.seed_topic ?? 'website scan'}
+          <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+            <span>Relevance {(Math.round((item.relevance_score ?? 0) * 100))}% · Seed: {item.seed_topic ?? 'website scan'}</span>
+            {item.source_type === 'user_seed' && (
+              <span className="px-1.5 py-0.5 rounded-md bg-emerald-900/40 text-emerald-400 text-[10px] font-medium border border-emerald-800/50">
+                User Seed
+              </span>
+            )}
+            {item.source_type === 'website_scan' && (
+              <span className="px-1.5 py-0.5 rounded-md bg-blue-900/40 text-blue-400 text-[10px] font-medium border border-blue-800/50">
+                Website Scan
+              </span>
+            )}
           </p>
         </div>
       </div>
     </button>
+  )
+}
+
+const INTENTS = ['informational', 'commercial', 'transactional', 'navigational'] as const
+
+function groupByIntent(items: KeywordOpportunity[]): Record<string, KeywordOpportunity[]> {
+  const grouped: Record<string, KeywordOpportunity[]> = {
+    informational: [], commercial: [], transactional: [], navigational: [],
+  }
+  for (const item of items) {
+    if (!grouped[item.intent]) grouped[item.intent] = []
+    grouped[item.intent].push(item)
+  }
+  return grouped
+}
+
+/** The 2-column intent grid, reused by each source section. Empty intents are hidden. */
+function IntentGrid({
+  items, onToggle, disabled,
+}: {
+  items: KeywordOpportunity[]
+  onToggle: (item: KeywordOpportunity) => void
+  disabled: boolean
+}) {
+  const grouped = groupByIntent(items)
+  const visible = INTENTS.filter(intent => (grouped[intent] ?? []).length > 0)
+  return (
+    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {visible.map(intent => {
+        const list = grouped[intent] ?? []
+        return (
+          <div key={intent} className="card">
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="font-semibold text-gray-100">{INTENT_LABELS[intent]}</p>
+                <p className="text-xs text-gray-500">{list.length} suggestions</p>
+              </div>
+              <IntentBadge intent={intent} />
+            </div>
+            <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
+              {list.map(item => (
+                <OpportunityRow key={item.id} item={item} disabled={disabled} onToggle={onToggle} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/** A self-contained section for one keyword source (user seeds vs website scan). */
+function KeywordSourceSection({
+  title, subtitle, icon, accent, items, onToggle, disabled, emptyState,
+}: {
+  title: string
+  subtitle: string
+  icon: React.ReactNode
+  accent: 'emerald' | 'blue'
+  items: KeywordOpportunity[]
+  onToggle: (item: KeywordOpportunity) => void
+  disabled: boolean
+  emptyState?: React.ReactNode
+}) {
+  const selected = items.filter(i => i.selected).length
+  const accentCls = accent === 'emerald'
+    ? 'border-emerald-700/40 bg-emerald-950/15 text-emerald-300'
+    : 'border-blue-700/40 bg-blue-950/15 text-blue-300'
+  return (
+    <section>
+      <div className={clsx('card mb-4 border', accentCls.split(' ').slice(0, 2).join(' '))}>
+        <div className="flex items-start gap-3">
+          <div className={clsx('w-10 h-10 rounded-xl border flex items-center justify-center flex-shrink-0', accentCls)}>
+            {icon}
+          </div>
+          <div className="min-w-0">
+            <h2 className="text-base font-semibold text-gray-100">{title}</h2>
+            <p className="text-xs text-gray-500">{subtitle}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              <span className="font-semibold text-gray-200">{items.length}</span> generated · {selected} selected
+            </p>
+          </div>
+        </div>
+      </div>
+      {items.length > 0 ? (
+        <IntentGrid items={items} onToggle={onToggle} disabled={disabled} />
+      ) : (
+        <div className="card text-center py-8 text-sm text-gray-500">
+          {emptyState ?? 'No keywords from this source yet.'}
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -154,6 +256,12 @@ export default function Keywords() {
   const clusters: KeywordCluster[] = expandMut.data?.clusters ?? existing?.clusters ?? []
   const hasOpportunities = (opportunities?.total_keywords ?? 0) > 0
 
+  // Split opportunities by where they came from: user-provided onboarding seeds
+  // vs keywords auto-extracted from the website scan.
+  const allOpportunities = opportunities?.all ?? []
+  const seedItems = allOpportunities.filter(i => i.source_type === 'user_seed')
+  const scanItems = allOpportunities.filter(i => i.source_type !== 'user_seed')
+
   if (!selectedProject) return <p className="text-gray-500">Select a project first.</p>
 
   return (
@@ -164,13 +272,15 @@ export default function Keywords() {
       </p>
 
       {hasOpportunities && (
-        <div className="mb-8">
-          <div className="card mb-4">
-            <div className="flex flex-col md:flex-row md:items-stretch gap-3">
+        <div className="mb-8 space-y-8">
+          {/* Summary bar */}
+          <div className="card">
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
               <div className="flex flex-col justify-center" style={{ flex: 3 }}>
-                <h2 className="section-title mb-1">Recommended Keywords From Website Scan</h2>
+                <h2 className="section-title mb-1">Recommended Keywords</h2>
                 <p className="text-sm text-gray-500">
                   {opportunities?.total_keywords ?? 0} generated · {opportunities?.selected_keywords ?? 0} selected
+                  {' · '}{seedItems.length} from your seeds · {scanItems.length} from website scan
                 </p>
               </div>
               <Link to="/dashboard/discover/competitors" className="btn-primary flex justify-center items-center gap-2" style={{ flex: 1, padding: '8px 16px', whiteSpace: 'nowrap' }}>
@@ -179,33 +289,35 @@ export default function Keywords() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-            {['informational', 'commercial', 'transactional', 'navigational'].map(intent => {
-              const items = opportunities?.grouped?.[intent] ?? []
-              return (
-                <div key={intent} className="card">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-semibold text-gray-100">{INTENT_LABELS[intent]}</p>
-                      <p className="text-xs text-gray-500">{items.length} suggestions</p>
-                    </div>
-                    <IntentBadge intent={intent} />
-                  </div>
-                  <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                    {items.map(item => (
-                      <OpportunityRow
-                        key={item.id}
-                        item={item}
-                        disabled={selectMut.isPending}
-                        onToggle={(kw) => selectMut.mutate({ id: kw.id, selected: !kw.selected })}
-                      />
-                    ))}
-                    {items.length === 0 && <p className="text-sm text-gray-600">No suggestions yet.</p>}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+          {/* Source 1 — user-provided seed keywords */}
+          <KeywordSourceSection
+            title="Your Seed Keywords"
+            subtitle="Expanded from the keywords you provided during onboarding"
+            icon={<Sparkles size={18} />}
+            accent="emerald"
+            items={seedItems}
+            disabled={selectMut.isPending}
+            onToggle={(kw) => selectMut.mutate({ id: kw.id, selected: !kw.selected })}
+            emptyState={
+              <>
+                No keywords from your seeds yet.{' '}
+                <Link to="/dashboard/onboarding" className="text-emerald-400 hover:underline">Add seed keywords in onboarding</Link>{' '}
+                or use manual expansion below.
+              </>
+            }
+          />
+
+          {/* Source 2 — website scraping */}
+          <KeywordSourceSection
+            title="From Website Scan"
+            subtitle="Auto-extracted from crawling your website content"
+            icon={<Globe size={18} />}
+            accent="blue"
+            items={scanItems}
+            disabled={selectMut.isPending}
+            onToggle={(kw) => selectMut.mutate({ id: kw.id, selected: !kw.selected })}
+            emptyState="No keywords from the website scan yet. Re-run onboarding to scan the site."
+          />
         </div>
       )}
 

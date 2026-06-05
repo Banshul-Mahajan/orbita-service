@@ -1,6 +1,5 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Dashboard from './pages/Dashboard'
-import Onboarding from './pages/Onboarding'
 import Keywords from './pages/Keywords'
 import Serp from './pages/Serp'
 import AiScan from './pages/AiScan'
@@ -13,7 +12,8 @@ export default function DiscoverApp() {
   return (
     <Routes>
       <Route index element={<Dashboard />} />
-      <Route path="onboarding"  element={<Onboarding />} />
+      {/* Onboarding is now the brand-level wizard at /dashboard/onboarding */}
+      <Route path="onboarding"  element={<Navigate to="/dashboard/onboarding" replace />} />
       <Route path="keywords"    element={<Keywords />} />
       <Route path="competitors" element={<Competitors />} />
       <Route path="content"     element={<Content />} />

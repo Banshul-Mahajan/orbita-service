@@ -11,7 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 const NAV = [
   { to: '/dashboard/discover',             icon: LayoutDashboard, label: 'Dashboard'      },
-  { to: '/dashboard/discover/onboarding',  icon: Globe2,          label: 'Onboarding'     },
+  { to: '/dashboard/onboarding',           icon: Globe2,          label: 'Onboarding'     },
   { to: '/dashboard/discover/keywords',    icon: KeySquare,       label: 'Keywords'       },
   { to: '/dashboard/discover/competitors', icon: Users,           label: 'Competitors'    },
   { to: '/dashboard/discover/content',     icon: FileText,        label: 'Create Orbit'   },

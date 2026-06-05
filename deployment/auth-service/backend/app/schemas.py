@@ -14,6 +14,9 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=72)
     full_name: Optional[str] = None
+    phone: Optional[str] = Field(default=None, max_length=50)
+    designation: Optional[str] = Field(default=None, max_length=150)
+    linkedin_url: Optional[str] = Field(default=None, max_length=500)
 
 
 class LoginRequest(BaseModel):
@@ -34,12 +37,22 @@ class UserOut(BaseModel):
     id: str
     email: str
     full_name: Optional[str]
+    phone: Optional[str] = None
+    designation: Optional[str] = None
+    linkedin_url: Optional[str] = None
     is_active: bool
     is_admin: bool
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class UserUpdate(BaseModel):
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    designation: Optional[str] = None
+    linkedin_url: Optional[str] = None
 
 
 class ValidateTokenResponse(BaseModel):

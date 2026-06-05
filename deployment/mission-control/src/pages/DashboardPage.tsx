@@ -22,7 +22,6 @@ const setCookie = (name: string, value: string) => {
 const MODULE_SUBNAV: Record<string, { label: string; path: string }[]> = {
   discover: [
     { label: 'Dashboard', path: '' },
-    { label: 'Onboarding', path: 'onboarding' },
     { label: 'Keywords', path: 'keywords' },
     { label: 'Competitors', path: 'competitors' },
     { label: 'SERP Analyzer', path: 'serp' },
@@ -57,6 +56,7 @@ const MODULE_CLASSES: Record<string, string> = {
 };
 
 const MODULE_TITLES: Record<string, string> = {
+  onboarding: 'Brand Onboarding',
   discover: 'Discover Orbit',
   visibility: 'Visibility Orbit',
   create: 'Create Orbit',

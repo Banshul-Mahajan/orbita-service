@@ -58,23 +58,33 @@ async def fetch_related_keywords(seed: str, limit: int) -> List[Dict]:
 
     results = []
     async with httpx.AsyncClient(timeout=30) as client:
-        # 1. Google Autocomplete suggestions
-        try:
-            resp = await client.get(
-                "https://serpapi.com/search",
-                params={
-                    "engine": "google_autocomplete",
-                    "q": seed,
-                    "api_key": settings.serpapi_key,
-                },
-            )
-            data = resp.json()
-            for s in data.get("suggestions", []):
-                results.append({"keyword": s.get("value", ""), "volume": None, "difficulty": None})
-        except Exception:
-            pass
+        # Generate variations for better intent mix (informational, commercial, transactional)
+        variations = [seed]
+        
+        seed_lower = seed.lower()
+        if not any(w in seed_lower for w in ["services", "agency", "software", "company"]):
+            variations.append(f"{seed} services")
+        if not any(w in seed_lower for w in ["pricing", "cost", "hire", "buy"]):
+            variations.append(f"{seed} pricing")
 
-        # 2. Related searches from a SERP
+        # 1. Google Autocomplete on all variations
+        for var in variations:
+            try:
+                resp = await client.get(
+                    "https://serpapi.com/search",
+                    params={
+                        "engine": "google_autocomplete",
+                        "q": var,
+                        "api_key": settings.serpapi_key,
+                    },
+                )
+                data = resp.json()
+                for s in data.get("suggestions", []):
+                    results.append({"keyword": s.get("value", ""), "volume": None, "difficulty": None})
+            except Exception:
+                pass
+
+        # 2. Related searches from a SERP on the original seed
         try:
             resp = await client.get(
                 "https://serpapi.com/search",

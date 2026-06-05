@@ -12,10 +12,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Building2,
+  Rocket,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
   { to: '/dashboard',            label: 'Mission Control', Icon: LayoutDashboard, end: true },
+  { to: '/dashboard/onboarding', label: 'Onboarding',      Icon: Rocket },
   { to: '/dashboard/brands',     label: 'Brands',          Icon: Building2 },
   { to: '/dashboard/discover',   label: 'Discover Orbit',  Icon: Search },
   { to: '/dashboard/visibility', label: 'Visibility Orbit',Icon: Globe },

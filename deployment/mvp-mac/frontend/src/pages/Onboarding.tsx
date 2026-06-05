@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, Globe2, Loader2, Sparkles } from 'lucide-react'
+import { ArrowRight, Globe2, Loader2, Sparkles, X, Search } from 'lucide-react'
 import { onboardingApi, type OnboardingStartInput } from '../api/client'
 import { useProjectStore } from '../store/projectStore'
 
@@ -12,13 +12,41 @@ const EMPTY_FORM: OnboardingStartInput = {
   industry: '',
   target_audience: '',
   country: '',
+  seed_keywords: [],
   limit_per_seed: 12,
 }
 
 export default function Onboarding() {
   const { selectedProject, setSelectedProject } = useProjectStore()
   const [form, setForm] = useState<OnboardingStartInput>(EMPTY_FORM)
+  const [seedInput, setSeedInput] = useState('')
   const qc = useQueryClient()
+
+  const addSeedKeyword = (value: string) => {
+    const trimmed = value.trim().toLowerCase()
+    if (!trimmed) return
+    const current = form.seed_keywords ?? []
+    if (current.length >= 10) return
+    if (current.some(k => k.toLowerCase() === trimmed)) return
+    setForm({ ...form, seed_keywords: [...current, trimmed] })
+    setSeedInput('')
+  }
+
+  const removeSeedKeyword = (index: number) => {
+    const current = form.seed_keywords ?? []
+    setForm({ ...form, seed_keywords: current.filter((_, i) => i !== index) })
+  }
+
+  const handleSeedInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addSeedKeyword(seedInput)
+    }
+    // Allow backspace to remove last tag when input is empty
+    if (e.key === 'Backspace' && !seedInput && (form.seed_keywords?.length ?? 0) > 0) {
+      removeSeedKeyword((form.seed_keywords?.length ?? 1) - 1)
+    }
+  }
 
   const { data: status } = useQuery({
     queryKey: ['onboarding', selectedProject?.id],
@@ -93,6 +121,56 @@ export default function Onboarding() {
                 onChange={e => setForm({ ...form, target_audience: e.target.value })}
                 placeholder="e.g. founders and marketers at small businesses"
               />
+            </div>
+
+            {/* Seed Keywords Tag Input */}
+            <div>
+              <label className="label mb-1 block">
+                <span className="flex items-center gap-1.5">
+                  <Search size={12} className="text-emerald-400" />
+                  Seed Keywords
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 mb-2">
+                Add 3–6 keywords your customers would search for. Press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300 text-[10px]">Enter</kbd> or <kbd className="px-1 py-0.5 bg-gray-700 rounded text-gray-300 text-[10px]">,</kbd> to add.
+              </p>
+              <div className="rounded-lg border border-gray-700 bg-gray-800/60 p-2 flex flex-wrap gap-1.5 min-h-[42px] focus-within:border-blue-500 transition-colors">
+                {(form.seed_keywords ?? []).map((kw, i) => (
+                  <span
+                    key={`${kw}-${i}`}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-900/60 text-emerald-200 text-xs font-medium border border-emerald-700/40"
+                  >
+                    {kw}
+                    <button
+                      type="button"
+                      onClick={() => removeSeedKeyword(i)}
+                      className="hover:text-red-300 transition-colors p-0 leading-none"
+                    >
+                      <X size={12} />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  className="bg-transparent border-none outline-none text-sm text-white placeholder-gray-500 flex-1 min-w-[140px] p-1"
+                  value={seedInput}
+                  onChange={e => setSeedInput(e.target.value)}
+                  onKeyDown={handleSeedInputKeyDown}
+                  onBlur={() => { if (seedInput.trim()) addSeedKeyword(seedInput) }}
+                  placeholder={
+                    (form.seed_keywords?.length ?? 0) === 0
+                      ? 'e.g. creative agency in mumbai'
+                      : (form.seed_keywords?.length ?? 0) >= 10
+                        ? 'Max 10 keywords reached'
+                        : 'Add another keyword...'
+                  }
+                  disabled={(form.seed_keywords?.length ?? 0) >= 10}
+                />
+              </div>
+              {(form.seed_keywords?.length ?? 0) > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {form.seed_keywords?.length}/10 keywords added
+                </p>
+              )}
             </div>
             <button
               className="btn-primary w-full flex items-center justify-center gap-2"

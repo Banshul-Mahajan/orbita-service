@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # Inter-service URLs
     AUTH_SERVICE_URL: str = "http://localhost:8000"
     KNOWLEDGE_CORE_URL: str = "http://localhost:8002"
+    DISCOVER_SERVICE_URL: str = "http://localhost:8001"
 
     # CORS
     CORS_ORIGINS: str = (

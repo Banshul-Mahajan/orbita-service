@@ -76,6 +76,16 @@ class ProbePromptCreate(BaseModel):
     category: str
 
 
+class GeneratePromptsRequest(BaseModel):
+    """Generate a categorized prompt set for a brand.
+
+    If seed_keywords are omitted, the backend pulls them (plus competitors and
+    industry) from the active project's onboarding profile in Discover.
+    """
+    project_id: Optional[str] = None
+    seed_keywords: Optional[List[str]] = None
+
+
 class ProbePromptOut(BaseModel):
     id: str
     brand_id: str

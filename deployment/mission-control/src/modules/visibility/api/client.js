@@ -67,9 +67,13 @@ export const factsAPI = {
 
 // ─── Prompts ───────────────────────────────────────────────────────────────────
 export const promptsAPI = {
-  list:   (brandId)           => api.get(`/brands/${brandId}/prompts`),
-  create: (brandId, data)     => api.post(`/brands/${brandId}/prompts`, data),
-  delete: (brandId, promptId) => api.delete(`/brands/${brandId}/prompts/${promptId}`),
+  list:     (brandId)           => api.get(`/brands/${brandId}/prompts`),
+  create:   (brandId, data)     => api.post(`/brands/${brandId}/prompts`, data),
+  delete:   (brandId, promptId) => api.delete(`/brands/${brandId}/prompts/${promptId}`),
+  // Generate a categorized prompt set (branded + unbranded category/comparison
+  // + seed-keyword prompts). Pulls seeds from the active project's onboarding
+  // profile when project_id is provided. Returns the full active prompt list.
+  generate: (brandId, data = {}) => api.post(`/brands/${brandId}/prompts/generate`, data),
 }
 
 // ─── Probes ────────────────────────────────────────────────────────────────────

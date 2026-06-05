@@ -51,17 +51,24 @@ def _iter_existing_keywords(result: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
 
 
 async def build_keyword_opportunities(
-    seed_topics: List[str],
+    seed_topics: List[dict],
     company_name: str,
     industry: str | None = None,
     target_audience: str | None = None,
     limit_per_seed: int = 12,
+    seed_keywords: List[str] | None = None,
 ) -> List[Dict[str, Any]]:
-    profile_terms = _terms(company_name, industry, target_audience, " ".join(seed_topics))
+    # Include user seed keywords in profile terms for better relevance scoring
+    all_seed_text = " ".join(s["topic"] for s in seed_topics)
+    if seed_keywords:
+        all_seed_text += " " + " ".join(seed_keywords)
+    profile_terms = _terms(company_name, industry, target_audience, all_seed_text)
     seen: set[str] = set()
     opportunities: List[Dict[str, Any]] = []
 
-    for seed in seed_topics[:6]:
+    for seed_dict in seed_topics[:6]:
+        seed = seed_dict["topic"]
+        source_type = seed_dict["source"]
         raw_items: List[Dict[str, Any]] = []
         try:
             expanded = await expand_keywords(seed, limit_per_seed)
@@ -86,6 +93,7 @@ async def build_keyword_opportunities(
                 "relevance_score": score_relevance(keyword, seed, profile_terms),
                 "cluster_name": item.get("cluster_name") or seed,
                 "selected": intent in {"commercial", "transactional"} and len(opportunities) < 8,
+                "source_type": source_type,
             })
 
     opportunities.sort(

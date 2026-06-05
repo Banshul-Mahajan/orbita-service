@@ -3,16 +3,22 @@ from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
 from app.models import Alert, ProbePrompt, ProbeRun
-from app.schemas import BrandCreate, BrandOut, FactCreate, FactOut, ProbePromptCreate, ProbePromptOut
+from app.schemas import (
+    BrandCreate, BrandOut, FactCreate, FactOut,
+    GeneratePromptsRequest, ProbePromptCreate, ProbePromptOut,
+)
 from app.core.deps import CurrentUser, get_current_user
 from app.core.platform import (
     auth_service_json,
+    discover_service_json,
     get_brand_or_404,
+    get_request_project_id,
     knowledge_core_json,
     serialize_brand,
     serialize_fact,
 )
 from app.services.probe_engine import get_preset_prompts
+from app.services.prompt_generator import generate_prompts
 
 router = APIRouter(prefix="/brands", tags=["brands"])
 
@@ -194,6 +200,82 @@ def create_prompt(
     db.commit()
     db.refresh(prompt)
     return prompt
+
+
+@router.post("/{brand_id}/prompts/generate", response_model=List[ProbePromptOut])
+def generate_brand_prompts(
+    brand_id: str,
+    payload: GeneratePromptsRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    """Generate a categorized prompt set (branded + unbranded category/comparison
+    + seed-keyword prompts) and persist any that don't already exist.
+
+    Seed keywords, competitors and industry are pulled from the active project's
+    onboarding profile in Discover unless seed_keywords are supplied in the body.
+    Returns the full active prompt list so the UI can refresh in one call.
+    """
+    brand = get_brand_or_404(request, current_user, brand_id)
+    industry = brand.get("industry")
+    seeds = list(payload.seed_keywords or [])
+    competitors: list[str] = []
+
+    project_id = payload.project_id or get_request_project_id(request)
+    if project_id and not seeds:
+        # Best-effort pull from Discover onboarding profile; never hard-fail here.
+        try:
+            resp = discover_service_json(
+                request,
+                f"/api/v1/onboarding/{project_id}/profile",
+                not_found_detail="",
+            )
+            data = resp.get("data") if isinstance(resp, dict) else None
+            if data:
+                seeds = (data.get("keywords") or {}).get("seed_keywords") or []
+                competitors = [
+                    c.get("name") for c in (data.get("competitors") or [])
+                    if isinstance(c, dict) and c.get("name")
+                ]
+                if not industry:
+                    industry = (data.get("company") or {}).get("industry")
+        except HTTPException:
+            pass  # Discover unavailable / no profile — fall back to brand-only prompts
+
+    generated = generate_prompts(
+        brand_name=brand["name"],
+        industry=industry,
+        seed_keywords=seeds,
+        competitors=competitors,
+    )
+
+    existing = {
+        (p.prompt_text or "").strip().lower()
+        for p in db.query(ProbePrompt).filter(
+            ProbePrompt.organization_id == current_user.org_id,
+            ProbePrompt.brand_id == brand_id,
+            ProbePrompt.is_active == True,
+        ).all()
+    }
+
+    for g in generated:
+        if g["prompt_text"].strip().lower() in existing:
+            continue
+        db.add(ProbePrompt(
+            organization_id=current_user.org_id,
+            brand_id=brand_id,
+            project_id=project_id,
+            prompt_text=g["prompt_text"],
+            category=g["category"],
+        ))
+    db.commit()
+
+    return db.query(ProbePrompt).filter(
+        ProbePrompt.organization_id == current_user.org_id,
+        ProbePrompt.brand_id == brand_id,
+        ProbePrompt.is_active == True,
+    ).order_by(ProbePrompt.created_at).all()
 
 
 @router.delete("/{brand_id}/prompts/{prompt_id}")

@@ -165,4 +165,5 @@ def _opportunity_dict(row: KeywordOpportunity) -> dict:
         "cluster_name": row.cluster_name,
         "selected": row.selected,
         "source_page_url": row.source_page_url,
+        "source_type": row.selection_notes,
     }

@@ -225,6 +225,50 @@ class ContentDraft(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
+class OnboardingProfile(Base):
+    """
+    Full onboarding information architecture for a project.
+
+    Mirrors the Orbita user-onboarding IA. Core identity fields (company name,
+    website, industry, country, target audience, locale) are still synced to
+    core.brands / core.projects via the Auth Service; this table stores the
+    rich, structured sections that have no home in the core schema. Each
+    section is kept as JSON so the wizard can evolve without migrations.
+    One row per project.
+    """
+    __tablename__ = "onboarding_profiles"
+    __table_args__ = {"schema": "discover"}
+
+    id = Column(UUID(as_uuid=False), primary_key=True, default=gen_uuid)
+    organization_id = Column(UUID(as_uuid=False), nullable=False, index=True)
+    brand_id = Column(UUID(as_uuid=False), nullable=False, index=True)
+    project_id = Column(UUID(as_uuid=False), nullable=False, unique=True, index=True)
+
+    # IA section 2 — Company Information (basic details, business type, goals, assets)
+    company = Column(JSON, nullable=True)
+    # IA section 3 — Target Audience Information
+    audience = Column(JSON, nullable=True)
+    # IA section 4 — Product & Service Information (list of products)
+    products = Column(JSON, nullable=True)
+    # IA section 5 — Competitor Information (list of competitors)
+    competitors = Column(JSON, nullable=True)
+    # IA section 6 — Geography & Localization Setup
+    geography = Column(JSON, nullable=True)
+    # IA section 7 — Seed Keyword Collection (seed keywords + categories)
+    keywords = Column(JSON, nullable=True)
+    # IA section 8 — AI Search & GEO Intelligence Inputs
+    ai_geo = Column(JSON, nullable=True)
+    # IA section 9 — Existing Digital Presence
+    digital_presence = Column(JSON, nullable=True)
+    # IA section 11 — Technical SEO Inputs (optional advanced setup)
+    technical_seo = Column(JSON, nullable=True)
+
+    status = Column(String(50), nullable=False, default="in_progress")  # in_progress | completed
+    completed_steps = Column(JSON, nullable=True)  # list of finished step keys
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
 # --- Restored for Router Compatibility ---
 class Project(Base):
     __tablename__ = "projects"

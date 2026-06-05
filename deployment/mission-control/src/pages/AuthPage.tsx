@@ -21,6 +21,8 @@ const AuthPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [linkedin, setLinkedin] = useState('');
   const [role, setRole] = useState('Marketing Manager');
   const [workspaceType, setWorkspaceType] = useState('Brand');
   const navigate = useNavigate();
@@ -53,7 +55,10 @@ const AuthPage: React.FC = () => {
           org_name: orgName,
           email,
           password,
-          full_name: fullName
+          full_name: fullName,
+          phone: phone || undefined,
+          designation: role || undefined,
+          linkedin_url: linkedin || undefined,
         });
       }
 
@@ -78,7 +83,9 @@ const AuthPage: React.FC = () => {
         if (response.data.org_id) {
           document.cookie = `orbit_org_id=${response.data.org_id};path=/;max-age=86400;SameSite=Lax`;
         }
-        navigate('/dashboard', { replace: true });
+        // New sign-ups go straight into guided company onboarding;
+        // returning users land on the dashboard.
+        navigate(isLogin ? '/dashboard' : '/dashboard/onboarding', { replace: true });
       }
     } catch (error: any) {
       console.error("Auth error", error);
@@ -195,8 +202,19 @@ const AuthPage: React.FC = () => {
             {!isLogin && (
               <>
                 <div className="form-group">
-                  <label>Your role</label>
-                  <select 
+                  <label>Phone number</label>
+                  <input
+                    type="tel"
+                    className="form-input"
+                    placeholder="+91 98765 43210"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Designation / Role</label>
+                  <select
                     className="form-select"
                     value={role}
                     onChange={(e) => setRole(e.target.value)}
@@ -206,6 +224,17 @@ const AuthPage: React.FC = () => {
                     <option>Founder / CEO</option>
                     <option>Other</option>
                   </select>
+                </div>
+
+                <div className="form-group">
+                  <label>LinkedIn profile (optional)</label>
+                  <input
+                    type="url"
+                    className="form-input"
+                    placeholder="https://linkedin.com/in/you"
+                    value={linkedin}
+                    onChange={(e) => setLinkedin(e.target.value)}
+                  />
                 </div>
 
                 <div className="form-group">

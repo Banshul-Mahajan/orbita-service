@@ -42,3 +42,12 @@ def create_tables():
         conn.execute(text("CREATE SCHEMA IF NOT EXISTS core"))
         conn.commit()
     Base.metadata.create_all(bind=engine)
+
+    # Lightweight, idempotent migrations for columns added after a table was
+    # first created. create_all() never ALTERs existing tables, so any new
+    # optional columns are added here. Safe to run on every startup.
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE core.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)"))
+        conn.execute(text("ALTER TABLE core.users ADD COLUMN IF NOT EXISTS designation VARCHAR(150)"))
+        conn.execute(text("ALTER TABLE core.users ADD COLUMN IF NOT EXISTS linkedin_url VARCHAR(500)"))
+        conn.commit()

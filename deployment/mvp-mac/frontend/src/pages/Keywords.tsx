@@ -111,8 +111,18 @@ function OpportunityRow({
             <span className="text-sm font-medium text-gray-100">{item.keyword}</span>
             <IntentBadge intent={item.intent} />
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Relevance {(Math.round((item.relevance_score ?? 0) * 100))}% · Seed: {item.seed_topic ?? 'website scan'}
+          <p className="text-xs text-gray-500 mt-1 flex items-center gap-2">
+            <span>Relevance {(Math.round((item.relevance_score ?? 0) * 100))}% · Seed: {item.seed_topic ?? 'website scan'}</span>
+            {item.source_type === 'user_seed' && (
+              <span className="px-1.5 py-0.5 rounded-md bg-emerald-900/40 text-emerald-400 text-[10px] font-medium border border-emerald-800/50">
+                User Seed
+              </span>
+            )}
+            {item.source_type === 'website_scan' && (
+              <span className="px-1.5 py-0.5 rounded-md bg-blue-900/40 text-blue-400 text-[10px] font-medium border border-blue-800/50">
+                Website Scan
+              </span>
+            )}
           </p>
         </div>
       </div>

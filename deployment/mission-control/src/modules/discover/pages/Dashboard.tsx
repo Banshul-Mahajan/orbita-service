@@ -223,9 +223,9 @@ export default function Dashboard() {
 
   const steps = [
     {
-      step: '01', title: 'Website Onboarding',
+      step: '01', title: 'Brand Onboarding',
       desc: 'Add company details and scan the website to discover seed topics.',
-      to: '/dashboard/discover/onboarding',
+      to: '/dashboard/onboarding',
       icon: <Globe2 size={16} className="text-blue-400" />,
       done: onboardingDone,
     },
